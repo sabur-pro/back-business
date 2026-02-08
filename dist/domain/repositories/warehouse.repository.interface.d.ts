@@ -1,0 +1,23 @@
+import { WarehouseEntity } from '../entities/warehouse.entity';
+export interface CreateWarehouseData {
+    name: string;
+    pointId: string;
+    address?: string | null;
+    description?: string | null;
+    isActive?: boolean;
+}
+export interface UpdateWarehouseData {
+    name?: string;
+    address?: string | null;
+    description?: string | null;
+    isActive?: boolean;
+}
+export interface IWarehouseRepository {
+    findById(id: string): Promise<WarehouseEntity | null>;
+    findByPointId(pointId: string): Promise<WarehouseEntity[]>;
+    findByUserId(userId: string): Promise<WarehouseEntity[]>;
+    create(data: CreateWarehouseData): Promise<WarehouseEntity>;
+    update(id: string, data: UpdateWarehouseData): Promise<WarehouseEntity>;
+    delete(id: string): Promise<void>;
+}
+export declare const WAREHOUSE_REPOSITORY: unique symbol;
