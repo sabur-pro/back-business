@@ -29,6 +29,7 @@ let OrgSettingsRepository = class OrgSettingsRepository {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });
@@ -41,11 +42,13 @@ let OrgSettingsRepository = class OrgSettingsRepository {
                 canAddEmployees: data.canAddEmployees ?? true,
                 canAddPoints: data.canAddPoints ?? true,
                 canAddWarehouses: data.canAddWarehouses ?? true,
+                canAddProducts: data.canAddProducts ?? false,
             },
             update: {
                 canAddEmployees: data.canAddEmployees,
                 canAddPoints: data.canAddPoints,
                 canAddWarehouses: data.canAddWarehouses,
+                canAddProducts: data.canAddProducts,
             },
         });
         return org_settings_entity_1.OrgSettingsEntity.create({
@@ -54,6 +57,7 @@ let OrgSettingsRepository = class OrgSettingsRepository {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });

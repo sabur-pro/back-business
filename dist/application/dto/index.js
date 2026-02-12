@@ -18,4 +18,6 @@ __exportStar(require("./auth"), exports);
 __exportStar(require("./warehouse"), exports);
 __exportStar(require("./organization"), exports);
 __exportStar(require("./employee"), exports);
+__exportStar(require("./product"), exports);
+__exportStar(require("./shipment"), exports);
 //# sourceMappingURL=index.js.map

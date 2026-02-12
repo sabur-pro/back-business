@@ -15,6 +15,7 @@ export interface UpdateWarehouseData {
 export interface IWarehouseRepository {
     findById(id: string): Promise<WarehouseEntity | null>;
     findByPointId(pointId: string): Promise<WarehouseEntity[]>;
+    findByPointIdAndName(pointId: string, name: string): Promise<WarehouseEntity | null>;
     findByUserId(userId: string): Promise<WarehouseEntity[]>;
     create(data: CreateWarehouseData): Promise<WarehouseEntity>;
     update(id: string, data: UpdateWarehouseData): Promise<WarehouseEntity>;

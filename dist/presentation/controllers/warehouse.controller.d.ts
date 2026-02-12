@@ -9,6 +9,7 @@ export declare class WarehouseController {
     create(userId: string, dto: CreateWarehouseDto): Promise<WarehouseResponseDto>;
     getAll(userId: string): Promise<WarehouseResponseDto[]>;
     getByPoint(pointId: string): Promise<WarehouseResponseDto[]>;
+    getById(id: string): Promise<WarehouseResponseDto>;
     update(userId: string, id: string, dto: UpdateWarehouseDto): Promise<WarehouseResponseDto>;
     delete(userId: string, id: string): Promise<void>;
 }

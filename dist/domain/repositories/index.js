@@ -21,4 +21,6 @@ __exportStar(require("./point.repository.interface"), exports);
 __exportStar(require("./warehouse.repository.interface"), exports);
 __exportStar(require("./point-member.repository.interface"), exports);
 __exportStar(require("./org-settings.repository.interface"), exports);
+__exportStar(require("./product.repository.interface"), exports);
+__exportStar(require("./shipment.repository.interface"), exports);
 //# sourceMappingURL=index.js.map

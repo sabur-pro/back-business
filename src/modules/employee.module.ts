@@ -22,6 +22,7 @@ import {
     DeleteEmployeeUseCase,
     GetPointEmployeesUseCase,
     UnassignPointUseCase,
+    UpdateEmployeePermissionsUseCase,
 } from '@application/use-cases/employee';
 
 @Module({
@@ -44,6 +45,7 @@ import {
         DeleteEmployeeUseCase,
         GetPointEmployeesUseCase,
         UnassignPointUseCase,
+        UpdateEmployeePermissionsUseCase,
     ],
 })
 export class EmployeeModule { }

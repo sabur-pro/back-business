@@ -59,6 +59,8 @@ let UserRepository = class UserRepository {
                 phone: data.phone ?? null,
                 role: data.role ?? 'ORGANIZER',
                 accountId: data.accountId ?? null,
+                canCreateShipment: data.canCreateShipment ?? false,
+                canReceiveShipment: data.canReceiveShipment ?? false,
                 isActive: data.isActive ?? true,
             },
         });
@@ -78,6 +80,8 @@ let UserRepository = class UserRepository {
                 ...(data.phone !== undefined && { phone: data.phone }),
                 ...(data.role && { role: data.role }),
                 ...(data.accountId !== undefined && { accountId: data.accountId }),
+                ...(data.canCreateShipment !== undefined && { canCreateShipment: data.canCreateShipment }),
+                ...(data.canReceiveShipment !== undefined && { canReceiveShipment: data.canReceiveShipment }),
                 ...(data.isActive !== undefined && { isActive: data.isActive }),
             },
         });

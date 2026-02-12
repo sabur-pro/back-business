@@ -16,6 +16,10 @@ export class GetWarehousesUseCase {
         return this.warehouseRepository.findByUserId(userId);
     }
 
+    async executeById(id: string): Promise<WarehouseEntity | null> {
+        return this.warehouseRepository.findById(id);
+    }
+
     async executeByPointId(pointId: string): Promise<WarehouseEntity[]> {
         return this.warehouseRepository.findByPointId(pointId);
     }

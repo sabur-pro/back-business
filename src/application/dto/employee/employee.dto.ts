@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEmail, IsOptional, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsNotEmpty, MinLength, MaxLength, IsBoolean } from 'class-validator';
 
 export class CreateEmployeeDto {
     @ApiProperty({ description: 'Email сотрудника', example: 'employee@example.com' })
@@ -59,11 +59,29 @@ export class EmployeeResponseDto {
     @ApiProperty({ description: 'Роль' })
     role: string;
 
+    @ApiProperty({ description: 'Может создавать отправки' })
+    canCreateShipment: boolean;
+
+    @ApiProperty({ description: 'Может принимать отправки' })
+    canReceiveShipment: boolean;
+
     @ApiProperty({ description: 'Активен' })
     isActive: boolean;
 
     @ApiProperty({ description: 'Дата создания' })
     createdAt: Date;
+}
+
+export class UpdateEmployeePermissionsDto {
+    @ApiPropertyOptional({ description: 'Может создавать отправки' })
+    @IsBoolean({ message: 'canCreateShipment должен быть boolean' })
+    @IsOptional()
+    canCreateShipment?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может принимать отправки' })
+    @IsBoolean({ message: 'canReceiveShipment должен быть boolean' })
+    @IsOptional()
+    canReceiveShipment?: boolean;
 }
 
 export class PointAssignmentResponseDto {

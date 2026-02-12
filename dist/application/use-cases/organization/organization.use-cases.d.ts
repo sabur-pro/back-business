@@ -1,5 +1,6 @@
 import { IAccountRepository } from '@domain/repositories/account.repository.interface';
 import { IPointRepository } from '@domain/repositories/point.repository.interface';
+import { IUserRepository } from '@domain/repositories/user.repository.interface';
 import { AccountEntity } from '@domain/entities/account.entity';
 import { PointEntity } from '@domain/entities/point.entity';
 import { CreateAccountDto, CreatePointDto } from '@application/dto/organization';
@@ -10,8 +11,14 @@ export declare class CreateAccountUseCase {
 }
 export declare class GetAccountsUseCase {
     private readonly accountRepository;
-    constructor(accountRepository: IAccountRepository);
+    private readonly userRepository;
+    constructor(accountRepository: IAccountRepository, userRepository: IUserRepository);
     execute(userId: string): Promise<AccountEntity[]>;
+}
+export declare class GetAllAccountsUseCase {
+    private readonly accountRepository;
+    constructor(accountRepository: IAccountRepository);
+    execute(): Promise<AccountEntity[]>;
 }
 export declare class CreatePointUseCase {
     private readonly pointRepository;

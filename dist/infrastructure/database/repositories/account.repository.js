@@ -32,6 +32,20 @@ let AccountRepository = class AccountRepository {
             updatedAt: account.updatedAt,
         });
     }
+    async findAll() {
+        const accounts = await this.prisma.account.findMany({
+            where: { isActive: true },
+            orderBy: { createdAt: 'desc' },
+        });
+        return accounts.map((a) => account_entity_1.AccountEntity.create({
+            id: a.id,
+            name: a.name,
+            ownerId: a.ownerId,
+            isActive: a.isActive,
+            createdAt: a.createdAt,
+            updatedAt: a.updatedAt,
+        }));
+    }
     async findByOwnerId(ownerId) {
         const accounts = await this.prisma.account.findMany({
             where: { ownerId },

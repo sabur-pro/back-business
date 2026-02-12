@@ -2,6 +2,7 @@ export declare class UpdateOrgSettingsDto {
     canAddEmployees?: boolean;
     canAddPoints?: boolean;
     canAddWarehouses?: boolean;
+    canAddProducts?: boolean;
 }
 export declare class OrgSettingsResponseDto {
     id: string;
@@ -9,4 +10,5 @@ export declare class OrgSettingsResponseDto {
     canAddEmployees: boolean;
     canAddPoints: boolean;
     canAddWarehouses: boolean;
+    canAddProducts: boolean;
 }

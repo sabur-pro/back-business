@@ -4,6 +4,7 @@ export interface UpdateOrgSettingsData {
     canAddEmployees?: boolean;
     canAddPoints?: boolean;
     canAddWarehouses?: boolean;
+    canAddProducts?: boolean;
 }
 export interface IOrgSettingsRepository {
     findByAccountId(accountId: string): Promise<OrgSettingsEntity | null>;

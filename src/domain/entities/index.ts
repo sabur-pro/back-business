@@ -5,3 +5,6 @@ export * from './point.entity';
 export * from './warehouse.entity';
 export * from './point-member.entity';
 export * from './org-settings.entity';
+export * from './product.entity';
+export * from './shipment.entity';
+export * from './shipment-item.entity';

@@ -48,6 +48,8 @@ export class GetPointEmployeesUseCase {
                     fullName: user.fullName,
                     phone: user.phone || undefined,
                     role: user.role,
+                    canCreateShipment: user.canCreateShipment,
+                    canReceiveShipment: user.canReceiveShipment,
                     isActive: user.isActive,
                     createdAt: user.createdAt,
                 });

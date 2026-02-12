@@ -29,8 +29,13 @@ exports.OrganizationModule = OrganizationModule = __decorate([
                 provide: repositories_2.POINT_REPOSITORY,
                 useClass: repositories_1.PointRepository,
             },
+            {
+                provide: repositories_2.USER_REPOSITORY,
+                useClass: repositories_1.UserRepository,
+            },
             organization_1.CreateAccountUseCase,
             organization_1.GetAccountsUseCase,
+            organization_1.GetAllAccountsUseCase,
             organization_1.CreatePointUseCase,
             organization_1.GetPointsUseCase,
             organization_1.UpdatePointUseCase,

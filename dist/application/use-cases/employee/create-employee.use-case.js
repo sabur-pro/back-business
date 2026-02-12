@@ -57,6 +57,8 @@ let CreateEmployeeUseCase = class CreateEmployeeUseCase {
             fullName: employee.fullName,
             phone: employee.phone || undefined,
             role: employee.role,
+            canCreateShipment: employee.canCreateShipment,
+            canReceiveShipment: employee.canReceiveShipment,
             isActive: employee.isActive,
             createdAt: employee.createdAt,
         };

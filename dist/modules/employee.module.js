@@ -34,6 +34,7 @@ exports.EmployeeModule = EmployeeModule = __decorate([
             employee_1.DeleteEmployeeUseCase,
             employee_1.GetPointEmployeesUseCase,
             employee_1.UnassignPointUseCase,
+            employee_1.UpdateEmployeePermissionsUseCase,
         ],
     })
 ], EmployeeModule);

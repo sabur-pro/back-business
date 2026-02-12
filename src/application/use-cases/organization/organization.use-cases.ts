@@ -7,8 +7,13 @@ import {
     IPointRepository,
     POINT_REPOSITORY,
 } from '@domain/repositories/point.repository.interface';
+import {
+    IUserRepository,
+    USER_REPOSITORY,
+} from '@domain/repositories/user.repository.interface';
 import { AccountEntity } from '@domain/entities/account.entity';
 import { PointEntity } from '@domain/entities/point.entity';
+import { UserRole } from '@domain/entities/user.entity';
 import { CreateAccountDto, CreatePointDto } from '@application/dto/organization';
 
 @Injectable()
@@ -31,10 +36,38 @@ export class GetAccountsUseCase {
     constructor(
         @Inject(ACCOUNT_REPOSITORY)
         private readonly accountRepository: IAccountRepository,
+        @Inject(USER_REPOSITORY)
+        private readonly userRepository: IUserRepository,
     ) { }
 
     async execute(userId: string): Promise<AccountEntity[]> {
-        return this.accountRepository.findByOwnerId(userId);
+        const user = await this.userRepository.findById(userId);
+        if (!user) return [];
+
+        // Organizer: return owned accounts
+        if (user.role === UserRole.ORGANIZER) {
+            return this.accountRepository.findByOwnerId(userId);
+        }
+
+        // POINT_ADMIN: return the account they belong to
+        if (user.role === UserRole.POINT_ADMIN && user.accountId) {
+            const account = await this.accountRepository.findById(user.accountId);
+            return account ? [account] : [];
+        }
+
+        return [];
+    }
+}
+
+@Injectable()
+export class GetAllAccountsUseCase {
+    constructor(
+        @Inject(ACCOUNT_REPOSITORY)
+        private readonly accountRepository: IAccountRepository,
+    ) { }
+
+    async execute(): Promise<AccountEntity[]> {
+        return this.accountRepository.findAll();
     }
 }
 

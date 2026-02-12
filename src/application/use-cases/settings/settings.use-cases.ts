@@ -32,6 +32,7 @@ export class GetOrgSettingsUseCase {
                     canAddEmployees: true,
                     canAddPoints: true,
                     canAddWarehouses: true,
+                    canAddProducts: false,
                 };
             }
             accountId = accounts[0].id;
@@ -43,6 +44,7 @@ export class GetOrgSettingsUseCase {
                     canAddEmployees: true,
                     canAddPoints: true,
                     canAddWarehouses: true,
+                    canAddProducts: false,
                 };
             }
             accountId = user.accountId;
@@ -56,6 +58,7 @@ export class GetOrgSettingsUseCase {
                 canAddEmployees: true,
                 canAddPoints: true,
                 canAddWarehouses: true,
+                canAddProducts: false,
             };
         }
 
@@ -65,6 +68,7 @@ export class GetOrgSettingsUseCase {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
         };
     }
 }
@@ -96,6 +100,7 @@ export class UpdateOrgSettingsUseCase {
             canAddEmployees: dto.canAddEmployees,
             canAddPoints: dto.canAddPoints,
             canAddWarehouses: dto.canAddWarehouses,
+            canAddProducts: dto.canAddProducts,
         });
 
         return {
@@ -104,6 +109,7 @@ export class UpdateOrgSettingsUseCase {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
         };
     }
 }

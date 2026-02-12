@@ -20,6 +20,8 @@ export class UserEntity {
         public readonly phone: string | null,
         public readonly role: UserRole,
         public readonly accountId: string | null,
+        public readonly canCreateShipment: boolean,
+        public readonly canReceiveShipment: boolean,
         public readonly isActive: boolean,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
@@ -46,6 +48,8 @@ export class UserEntity {
         phone?: string | null;
         role?: UserRole;
         accountId?: string | null;
+        canCreateShipment?: boolean;
+        canReceiveShipment?: boolean;
         isActive?: boolean;
         createdAt?: Date;
         updatedAt?: Date;
@@ -59,6 +63,8 @@ export class UserEntity {
             props.phone ?? null,
             props.role ?? UserRole.ORGANIZER,
             props.accountId ?? null,
+            props.canCreateShipment ?? false,
+            props.canReceiveShipment ?? false,
             props.isActive ?? true,
             props.createdAt ?? new Date(),
             props.updatedAt ?? new Date(),

@@ -28,6 +28,24 @@ export class AccountRepository implements IAccountRepository {
         });
     }
 
+    async findAll(): Promise<AccountEntity[]> {
+        const accounts = await this.prisma.account.findMany({
+            where: { isActive: true },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return accounts.map((a) =>
+            AccountEntity.create({
+                id: a.id,
+                name: a.name,
+                ownerId: a.ownerId,
+                isActive: a.isActive,
+                createdAt: a.createdAt,
+                updatedAt: a.updatedAt,
+            }),
+        );
+    }
+
     async findByOwnerId(ownerId: string): Promise<AccountEntity[]> {
         const accounts = await this.prisma.account.findMany({
             where: { ownerId },

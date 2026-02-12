@@ -34,6 +34,13 @@ let WarehouseController = class WarehouseController {
     async getByPoint(pointId) {
         return this.getWarehousesUseCase.executeByPointId(pointId);
     }
+    async getById(id) {
+        const warehouse = await this.getWarehousesUseCase.executeById(id);
+        if (!warehouse) {
+            throw new Error('Склад не найден');
+        }
+        return warehouse;
+    }
     async update(userId, id, dto) {
         return this.updateWarehouseUseCase.execute(userId, id, dto);
     }
@@ -71,6 +78,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], WarehouseController.prototype, "getByPoint", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Получить склад по ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Склад', type: warehouse_1.WarehouseResponseDto }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Склад не найден' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], WarehouseController.prototype, "getById", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Обновить склад' }),

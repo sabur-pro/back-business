@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PointAssignmentResponseDto = exports.EmployeeResponseDto = exports.AssignPointDto = exports.CreateEmployeeDto = void 0;
+exports.PointAssignmentResponseDto = exports.UpdateEmployeePermissionsDto = exports.EmployeeResponseDto = exports.AssignPointDto = exports.CreateEmployeeDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class CreateEmployeeDto {
@@ -88,6 +88,14 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeResponseDto.prototype, "role", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Может создавать отправки' }),
+    __metadata("design:type", Boolean)
+], EmployeeResponseDto.prototype, "canCreateShipment", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Может принимать отправки' }),
+    __metadata("design:type", Boolean)
+], EmployeeResponseDto.prototype, "canReceiveShipment", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ description: 'Активен' }),
     __metadata("design:type", Boolean)
 ], EmployeeResponseDto.prototype, "isActive", void 0);
@@ -95,6 +103,21 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Дата создания' }),
     __metadata("design:type", Date)
 ], EmployeeResponseDto.prototype, "createdAt", void 0);
+class UpdateEmployeePermissionsDto {
+}
+exports.UpdateEmployeePermissionsDto = UpdateEmployeePermissionsDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может создавать отправки' }),
+    (0, class_validator_1.IsBoolean)({ message: 'canCreateShipment должен быть boolean' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateEmployeePermissionsDto.prototype, "canCreateShipment", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может принимать отправки' }),
+    (0, class_validator_1.IsBoolean)({ message: 'canReceiveShipment должен быть boolean' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateEmployeePermissionsDto.prototype, "canReceiveShipment", void 0);
 class PointAssignmentResponseDto {
 }
 exports.PointAssignmentResponseDto = PointAssignmentResponseDto;

@@ -14,6 +14,9 @@ const warehouse_module_1 = require("./modules/warehouse.module");
 const organization_module_1 = require("./modules/organization.module");
 const employee_module_1 = require("./modules/employee.module");
 const settings_module_1 = require("./modules/settings.module");
+const product_module_1 = require("./modules/product.module");
+const upload_module_1 = require("./modules/upload.module");
+const shipment_module_1 = require("./modules/shipment.module");
 const prisma_module_1 = require("./infrastructure/database/prisma/prisma.module");
 let AppModule = class AppModule {
 };
@@ -31,6 +34,9 @@ exports.AppModule = AppModule = __decorate([
             organization_module_1.OrganizationModule,
             employee_module_1.EmployeeModule,
             settings_module_1.SettingsModule,
+            product_module_1.ProductModule,
+            upload_module_1.UploadModule,
+            shipment_module_1.ShipmentModule,
         ],
     })
 ], AppModule);

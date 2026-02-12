@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Post,
+    Put,
     Body,
     Param,
     Delete,
@@ -19,6 +20,7 @@ import { UserRole } from '@/domain/entities/user.entity';
 import {
     CreateEmployeeDto,
     AssignPointDto,
+    UpdateEmployeePermissionsDto,
     EmployeeResponseDto,
     PointAssignmentResponseDto,
 } from '@application/dto/employee';
@@ -29,6 +31,7 @@ import {
     DeleteEmployeeUseCase,
     GetPointEmployeesUseCase,
     UnassignPointUseCase,
+    UpdateEmployeePermissionsUseCase,
 } from '@application/use-cases/employee';
 
 @ApiTags('Сотрудники')
@@ -43,6 +46,7 @@ export class EmployeeController {
         private readonly deleteEmployeeUseCase: DeleteEmployeeUseCase,
         private readonly getPointEmployeesUseCase: GetPointEmployeesUseCase,
         private readonly unassignPointUseCase: UnassignPointUseCase,
+        private readonly updateEmployeePermissionsUseCase: UpdateEmployeePermissionsUseCase,
     ) { }
 
     @Post()
@@ -93,6 +97,17 @@ export class EmployeeController {
         @Body() dto: AssignPointDto,
     ): Promise<void> {
         return this.unassignPointUseCase.execute(userId, employeeId, dto.pointId);
+    }
+
+    @Put(':employeeId/permissions')
+    @ApiOperation({ summary: 'Обновить разрешения сотрудника' })
+    @ApiResponse({ status: 200, description: 'Разрешения обновлены', type: EmployeeResponseDto })
+    async updatePermissions(
+        @CurrentUser('id') userId: string,
+        @Param('employeeId') employeeId: string,
+        @Body() dto: UpdateEmployeePermissionsDto,
+    ): Promise<EmployeeResponseDto> {
+        return this.updateEmployeePermissionsUseCase.execute(userId, employeeId, dto);
     }
 
     @Delete(':employeeId')

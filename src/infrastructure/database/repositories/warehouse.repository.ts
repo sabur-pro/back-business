@@ -50,6 +50,25 @@ export class WarehouseRepository implements IWarehouseRepository {
         );
     }
 
+    async findByPointIdAndName(pointId: string, name: string): Promise<WarehouseEntity | null> {
+        const warehouse = await this.prisma.warehouse.findFirst({
+            where: { pointId, name },
+        });
+
+        if (!warehouse) return null;
+
+        return WarehouseEntity.create({
+            id: warehouse.id,
+            name: warehouse.name,
+            pointId: warehouse.pointId,
+            address: warehouse.address,
+            description: warehouse.description,
+            isActive: warehouse.isActive,
+            createdAt: warehouse.createdAt,
+            updatedAt: warehouse.updatedAt,
+        });
+    }
+
     async findByUserId(userId: string): Promise<WarehouseEntity[]> {
         // Find warehouses in points owned by user's account
         const ownedWarehouses = await this.prisma.warehouse.findMany({

@@ -19,4 +19,6 @@ __exportStar(require("./warehouse.controller"), exports);
 __exportStar(require("./organization.controller"), exports);
 __exportStar(require("./employee.controller"), exports);
 __exportStar(require("./settings.controller"), exports);
+__exportStar(require("./product.controller"), exports);
+__exportStar(require("./shipment.controller"), exports);
 //# sourceMappingURL=index.js.map

@@ -21,4 +21,7 @@ __exportStar(require("./point.entity"), exports);
 __exportStar(require("./warehouse.entity"), exports);
 __exportStar(require("./point-member.entity"), exports);
 __exportStar(require("./org-settings.entity"), exports);
+__exportStar(require("./product.entity"), exports);
+__exportStar(require("./shipment.entity"), exports);
+__exportStar(require("./shipment-item.entity"), exports);
 //# sourceMappingURL=index.js.map

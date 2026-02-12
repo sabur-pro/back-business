@@ -20,9 +20,10 @@ const user_entity_1 = require("../../domain/entities/user.entity");
 const organization_1 = require("../../application/dto/organization");
 const organization_2 = require("../../application/use-cases/organization");
 let OrganizationController = class OrganizationController {
-    constructor(createAccountUseCase, getAccountsUseCase, createPointUseCase, getPointsUseCase, updatePointUseCase) {
+    constructor(createAccountUseCase, getAccountsUseCase, getAllAccountsUseCase, createPointUseCase, getPointsUseCase, updatePointUseCase) {
         this.createAccountUseCase = createAccountUseCase;
         this.getAccountsUseCase = getAccountsUseCase;
+        this.getAllAccountsUseCase = getAllAccountsUseCase;
         this.createPointUseCase = createPointUseCase;
         this.getPointsUseCase = getPointsUseCase;
         this.updatePointUseCase = updatePointUseCase;
@@ -32,6 +33,9 @@ let OrganizationController = class OrganizationController {
     }
     async getAccounts(userId) {
         return this.getAccountsUseCase.execute(userId);
+    }
+    async getAllAccounts() {
+        return this.getAllAccountsUseCase.execute();
     }
     async createPoint(userId, accountId, dto) {
         return this.createPointUseCase.execute(userId, accountId, dto);
@@ -67,6 +71,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], OrganizationController.prototype, "getAccounts", null);
+__decorate([
+    (0, common_1.Get)('accounts/all'),
+    (0, swagger_1.ApiOperation)({ summary: 'Получить все организации' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Список всех организаций', type: [organization_1.AccountResponseDto] }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], OrganizationController.prototype, "getAllAccounts", null);
 __decorate([
     (0, common_1.Post)('accounts/:accountId/points'),
     (0, decorators_1.Roles)(user_entity_1.UserRole.ORGANIZER),
@@ -115,6 +127,7 @@ exports.OrganizationController = OrganizationController = __decorate([
     (0, common_1.Controller)('organizations'),
     __metadata("design:paramtypes", [organization_2.CreateAccountUseCase,
         organization_2.GetAccountsUseCase,
+        organization_2.GetAllAccountsUseCase,
         organization_2.CreatePointUseCase,
         organization_2.GetPointsUseCase,
         organization_2.UpdatePointUseCase])

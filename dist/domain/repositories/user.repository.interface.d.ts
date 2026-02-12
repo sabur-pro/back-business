@@ -7,6 +7,8 @@ export interface CreateUserData {
     phone?: string | null;
     role?: UserRole;
     accountId?: string | null;
+    canCreateShipment?: boolean;
+    canReceiveShipment?: boolean;
     isActive?: boolean;
 }
 export interface UpdateUserData {
@@ -17,6 +19,8 @@ export interface UpdateUserData {
     phone?: string | null;
     role?: UserRole;
     accountId?: string | null;
+    canCreateShipment?: boolean;
+    canReceiveShipment?: boolean;
     isActive?: boolean;
 }
 export interface IUserRepository {

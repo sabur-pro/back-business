@@ -16,6 +16,11 @@ export class UpdateOrgSettingsDto {
     @IsBoolean()
     @IsOptional()
     canAddWarehouses?: boolean;
+
+    @ApiProperty({ description: 'Разрешить админу точки добавлять товары', required: false })
+    @IsBoolean()
+    @IsOptional()
+    canAddProducts?: boolean;
 }
 
 export class OrgSettingsResponseDto {
@@ -33,4 +38,7 @@ export class OrgSettingsResponseDto {
 
     @ApiProperty()
     canAddWarehouses: boolean;
+
+    @ApiProperty()
+    canAddProducts: boolean;
 }

@@ -33,6 +33,12 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateOrgSettingsDto.prototype, "canAddWarehouses", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Разрешить админу точки добавлять товары', required: false }),
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateOrgSettingsDto.prototype, "canAddProducts", void 0);
 class OrgSettingsResponseDto {
 }
 exports.OrgSettingsResponseDto = OrgSettingsResponseDto;
@@ -56,4 +62,8 @@ __decorate([
     (0, swagger_1.ApiProperty)(),
     __metadata("design:type", Boolean)
 ], OrgSettingsResponseDto.prototype, "canAddWarehouses", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    __metadata("design:type", Boolean)
+], OrgSettingsResponseDto.prototype, "canAddProducts", void 0);
 //# sourceMappingURL=settings.dto.js.map

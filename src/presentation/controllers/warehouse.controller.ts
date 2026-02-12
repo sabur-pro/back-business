@@ -64,6 +64,18 @@ export class WarehouseController {
         return this.getWarehousesUseCase.executeByPointId(pointId);
     }
 
+    @Get(':id')
+    @ApiOperation({ summary: 'Получить склад по ID' })
+    @ApiResponse({ status: 200, description: 'Склад', type: WarehouseResponseDto })
+    @ApiResponse({ status: 404, description: 'Склад не найден' })
+    async getById(@Param('id') id: string): Promise<WarehouseResponseDto> {
+        const warehouse = await this.getWarehousesUseCase.executeById(id);
+        if (!warehouse) {
+            throw new Error('Склад не найден');
+        }
+        return warehouse;
+    }
+
     @Put(':id')
     @ApiOperation({ summary: 'Обновить склад' })
     @ApiResponse({ status: 200, description: 'Склад обновлен', type: WarehouseResponseDto })

@@ -9,6 +9,7 @@ export class OrgSettingsEntity {
         public readonly canAddEmployees: boolean,
         public readonly canAddPoints: boolean,
         public readonly canAddWarehouses: boolean,
+        public readonly canAddProducts: boolean,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) { }
@@ -19,6 +20,7 @@ export class OrgSettingsEntity {
         canAddEmployees?: boolean;
         canAddPoints?: boolean;
         canAddWarehouses?: boolean;
+        canAddProducts?: boolean;
         createdAt?: Date;
         updatedAt?: Date;
     }): OrgSettingsEntity {
@@ -28,6 +30,7 @@ export class OrgSettingsEntity {
             props.canAddEmployees ?? true,
             props.canAddPoints ?? true,
             props.canAddWarehouses ?? true,
+            props.canAddProducts ?? false,
             props.createdAt ?? new Date(),
             props.updatedAt ?? new Date(),
         );

@@ -23,6 +23,7 @@ import {
 import {
     CreateAccountUseCase,
     GetAccountsUseCase,
+    GetAllAccountsUseCase,
     CreatePointUseCase,
     GetPointsUseCase,
     UpdatePointUseCase,
@@ -35,6 +36,7 @@ export class OrganizationController {
     constructor(
         private readonly createAccountUseCase: CreateAccountUseCase,
         private readonly getAccountsUseCase: GetAccountsUseCase,
+        private readonly getAllAccountsUseCase: GetAllAccountsUseCase,
         private readonly createPointUseCase: CreatePointUseCase,
         private readonly getPointsUseCase: GetPointsUseCase,
         private readonly updatePointUseCase: UpdatePointUseCase,
@@ -56,6 +58,13 @@ export class OrganizationController {
     @ApiResponse({ status: 200, description: 'Список организаций', type: [AccountResponseDto] })
     async getAccounts(@CurrentUser('id') userId: string): Promise<AccountResponseDto[]> {
         return this.getAccountsUseCase.execute(userId);
+    }
+
+    @Get('accounts/all')
+    @ApiOperation({ summary: 'Получить все организации' })
+    @ApiResponse({ status: 200, description: 'Список всех организаций', type: [AccountResponseDto] })
+    async getAllAccounts(): Promise<AccountResponseDto[]> {
+        return this.getAllAccountsUseCase.execute();
     }
 
     @Post('accounts/:accountId/points')

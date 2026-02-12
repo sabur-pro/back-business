@@ -50,6 +50,23 @@ let WarehouseRepository = class WarehouseRepository {
             updatedAt: w.updatedAt,
         }));
     }
+    async findByPointIdAndName(pointId, name) {
+        const warehouse = await this.prisma.warehouse.findFirst({
+            where: { pointId, name },
+        });
+        if (!warehouse)
+            return null;
+        return warehouse_entity_1.WarehouseEntity.create({
+            id: warehouse.id,
+            name: warehouse.name,
+            pointId: warehouse.pointId,
+            address: warehouse.address,
+            description: warehouse.description,
+            isActive: warehouse.isActive,
+            createdAt: warehouse.createdAt,
+            updatedAt: warehouse.updatedAt,
+        });
+    }
     async findByUserId(userId) {
         const ownedWarehouses = await this.prisma.warehouse.findMany({
             where: {

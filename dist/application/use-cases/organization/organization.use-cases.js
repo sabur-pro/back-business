@@ -12,10 +12,12 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GetPointsUseCase = exports.UpdatePointUseCase = exports.CreatePointUseCase = exports.GetAccountsUseCase = exports.CreateAccountUseCase = void 0;
+exports.GetPointsUseCase = exports.UpdatePointUseCase = exports.CreatePointUseCase = exports.GetAllAccountsUseCase = exports.GetAccountsUseCase = exports.CreateAccountUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const account_repository_interface_1 = require("../../../domain/repositories/account.repository.interface");
 const point_repository_interface_1 = require("../../../domain/repositories/point.repository.interface");
+const user_repository_interface_1 = require("../../../domain/repositories/user.repository.interface");
+const user_entity_1 = require("../../../domain/entities/user.entity");
 let CreateAccountUseCase = class CreateAccountUseCase {
     constructor(accountRepository) {
         this.accountRepository = accountRepository;
@@ -34,19 +36,45 @@ exports.CreateAccountUseCase = CreateAccountUseCase = __decorate([
     __metadata("design:paramtypes", [Object])
 ], CreateAccountUseCase);
 let GetAccountsUseCase = class GetAccountsUseCase {
-    constructor(accountRepository) {
+    constructor(accountRepository, userRepository) {
         this.accountRepository = accountRepository;
+        this.userRepository = userRepository;
     }
     async execute(userId) {
-        return this.accountRepository.findByOwnerId(userId);
+        const user = await this.userRepository.findById(userId);
+        if (!user)
+            return [];
+        if (user.role === user_entity_1.UserRole.ORGANIZER) {
+            return this.accountRepository.findByOwnerId(userId);
+        }
+        if (user.role === user_entity_1.UserRole.POINT_ADMIN && user.accountId) {
+            const account = await this.accountRepository.findById(user.accountId);
+            return account ? [account] : [];
+        }
+        return [];
     }
 };
 exports.GetAccountsUseCase = GetAccountsUseCase;
 exports.GetAccountsUseCase = GetAccountsUseCase = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(account_repository_interface_1.ACCOUNT_REPOSITORY)),
-    __metadata("design:paramtypes", [Object])
+    __param(1, (0, common_1.Inject)(user_repository_interface_1.USER_REPOSITORY)),
+    __metadata("design:paramtypes", [Object, Object])
 ], GetAccountsUseCase);
+let GetAllAccountsUseCase = class GetAllAccountsUseCase {
+    constructor(accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+    async execute() {
+        return this.accountRepository.findAll();
+    }
+};
+exports.GetAllAccountsUseCase = GetAllAccountsUseCase;
+exports.GetAllAccountsUseCase = GetAllAccountsUseCase = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Inject)(account_repository_interface_1.ACCOUNT_REPOSITORY)),
+    __metadata("design:paramtypes", [Object])
+], GetAllAccountsUseCase);
 let CreatePointUseCase = class CreatePointUseCase {
     constructor(pointRepository, accountRepository) {
         this.pointRepository = pointRepository;

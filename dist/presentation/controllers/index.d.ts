@@ -3,3 +3,5 @@ export * from './warehouse.controller';
 export * from './organization.controller';
 export * from './employee.controller';
 export * from './settings.controller';
+export * from './product.controller';
+export * from './shipment.controller';

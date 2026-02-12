@@ -38,6 +38,7 @@ let GetOrgSettingsUseCase = class GetOrgSettingsUseCase {
                     canAddEmployees: true,
                     canAddPoints: true,
                     canAddWarehouses: true,
+                    canAddProducts: false,
                 };
             }
             accountId = accounts[0].id;
@@ -50,6 +51,7 @@ let GetOrgSettingsUseCase = class GetOrgSettingsUseCase {
                     canAddEmployees: true,
                     canAddPoints: true,
                     canAddWarehouses: true,
+                    canAddProducts: false,
                 };
             }
             accountId = user.accountId;
@@ -62,6 +64,7 @@ let GetOrgSettingsUseCase = class GetOrgSettingsUseCase {
                 canAddEmployees: true,
                 canAddPoints: true,
                 canAddWarehouses: true,
+                canAddProducts: false,
             };
         }
         return {
@@ -70,6 +73,7 @@ let GetOrgSettingsUseCase = class GetOrgSettingsUseCase {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
         };
     }
 };
@@ -101,6 +105,7 @@ let UpdateOrgSettingsUseCase = class UpdateOrgSettingsUseCase {
             canAddEmployees: dto.canAddEmployees,
             canAddPoints: dto.canAddPoints,
             canAddWarehouses: dto.canAddWarehouses,
+            canAddProducts: dto.canAddProducts,
         });
         return {
             id: settings.id,
@@ -108,6 +113,7 @@ let UpdateOrgSettingsUseCase = class UpdateOrgSettingsUseCase {
             canAddEmployees: settings.canAddEmployees,
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
+            canAddProducts: settings.canAddProducts,
         };
     }
 };

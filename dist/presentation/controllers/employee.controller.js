@@ -20,13 +20,14 @@ const user_entity_1 = require("../../domain/entities/user.entity");
 const employee_1 = require("../../application/dto/employee");
 const employee_2 = require("../../application/use-cases/employee");
 let EmployeeController = class EmployeeController {
-    constructor(createEmployeeUseCase, getEmployeesUseCase, assignPointUseCase, deleteEmployeeUseCase, getPointEmployeesUseCase, unassignPointUseCase) {
+    constructor(createEmployeeUseCase, getEmployeesUseCase, assignPointUseCase, deleteEmployeeUseCase, getPointEmployeesUseCase, unassignPointUseCase, updateEmployeePermissionsUseCase) {
         this.createEmployeeUseCase = createEmployeeUseCase;
         this.getEmployeesUseCase = getEmployeesUseCase;
         this.assignPointUseCase = assignPointUseCase;
         this.deleteEmployeeUseCase = deleteEmployeeUseCase;
         this.getPointEmployeesUseCase = getPointEmployeesUseCase;
         this.unassignPointUseCase = unassignPointUseCase;
+        this.updateEmployeePermissionsUseCase = updateEmployeePermissionsUseCase;
     }
     async create(userId, dto) {
         return this.createEmployeeUseCase.execute(userId, dto);
@@ -42,6 +43,9 @@ let EmployeeController = class EmployeeController {
     }
     async unassignPoint(userId, employeeId, dto) {
         return this.unassignPointUseCase.execute(userId, employeeId, dto.pointId);
+    }
+    async updatePermissions(userId, employeeId, dto) {
+        return this.updateEmployeePermissionsUseCase.execute(userId, employeeId, dto);
     }
     async delete(userId, employeeId) {
         return this.deleteEmployeeUseCase.execute(userId, employeeId);
@@ -101,6 +105,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], EmployeeController.prototype, "unassignPoint", null);
 __decorate([
+    (0, common_1.Put)(':employeeId/permissions'),
+    (0, swagger_1.ApiOperation)({ summary: 'Обновить разрешения сотрудника' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Разрешения обновлены', type: employee_1.EmployeeResponseDto }),
+    __param(0, (0, decorators_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('employeeId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, employee_1.UpdateEmployeePermissionsDto]),
+    __metadata("design:returntype", Promise)
+], EmployeeController.prototype, "updatePermissions", null);
+__decorate([
     (0, common_1.Delete)(':employeeId'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     (0, swagger_1.ApiOperation)({ summary: 'Удалить сотрудника' }),
@@ -123,6 +138,7 @@ exports.EmployeeController = EmployeeController = __decorate([
         employee_2.AssignPointUseCase,
         employee_2.DeleteEmployeeUseCase,
         employee_2.GetPointEmployeesUseCase,
-        employee_2.UnassignPointUseCase])
+        employee_2.UnassignPointUseCase,
+        employee_2.UpdateEmployeePermissionsUseCase])
 ], EmployeeController);
 //# sourceMappingURL=employee.controller.js.map

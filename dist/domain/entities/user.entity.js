@@ -7,7 +7,7 @@ var UserRole;
     UserRole["POINT_ADMIN"] = "POINT_ADMIN";
 })(UserRole || (exports.UserRole = UserRole = {}));
 class UserEntity {
-    constructor(id, email, password, firstName, lastName, phone, role, accountId, isActive, createdAt, updatedAt) {
+    constructor(id, email, password, firstName, lastName, phone, role, accountId, canCreateShipment, canReceiveShipment, isActive, createdAt, updatedAt) {
         this.id = id;
         this.email = email;
         this.password = password;
@@ -16,6 +16,8 @@ class UserEntity {
         this.phone = phone;
         this.role = role;
         this.accountId = accountId;
+        this.canCreateShipment = canCreateShipment;
+        this.canReceiveShipment = canReceiveShipment;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -30,7 +32,7 @@ class UserEntity {
         return this.role === UserRole.POINT_ADMIN;
     }
     static create(props) {
-        return new UserEntity(props.id, props.email, props.password, props.firstName, props.lastName, props.phone ?? null, props.role ?? UserRole.ORGANIZER, props.accountId ?? null, props.isActive ?? true, props.createdAt ?? new Date(), props.updatedAt ?? new Date());
+        return new UserEntity(props.id, props.email, props.password, props.firstName, props.lastName, props.phone ?? null, props.role ?? UserRole.ORGANIZER, props.accountId ?? null, props.canCreateShipment ?? false, props.canReceiveShipment ?? false, props.isActive ?? true, props.createdAt ?? new Date(), props.updatedAt ?? new Date());
     }
 }
 exports.UserEntity = UserEntity;

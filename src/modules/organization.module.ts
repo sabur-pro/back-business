@@ -4,14 +4,17 @@ import { OrganizationController } from '@presentation/controllers';
 import {
     AccountRepository,
     PointRepository,
+    UserRepository,
 } from '@infrastructure/database/repositories';
 import {
     ACCOUNT_REPOSITORY,
     POINT_REPOSITORY,
+    USER_REPOSITORY,
 } from '@domain/repositories';
 import {
     CreateAccountUseCase,
     GetAccountsUseCase,
+    GetAllAccountsUseCase,
     CreatePointUseCase,
     GetPointsUseCase,
     UpdatePointUseCase,
@@ -30,9 +33,14 @@ import {
             provide: POINT_REPOSITORY,
             useClass: PointRepository,
         },
+        {
+            provide: USER_REPOSITORY,
+            useClass: UserRepository,
+        },
         // Use Cases
         CreateAccountUseCase,
         GetAccountsUseCase,
+        GetAllAccountsUseCase,
         CreatePointUseCase,
         GetPointsUseCase,
         UpdatePointUseCase,

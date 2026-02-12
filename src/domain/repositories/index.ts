@@ -5,3 +5,5 @@ export * from './point.repository.interface';
 export * from './warehouse.repository.interface';
 export * from './point-member.repository.interface';
 export * from './org-settings.repository.interface';
+export * from './product.repository.interface';
+export * from './shipment.repository.interface';

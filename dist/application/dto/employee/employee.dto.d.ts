@@ -16,8 +16,14 @@ export declare class EmployeeResponseDto {
     fullName: string;
     phone?: string;
     role: string;
+    canCreateShipment: boolean;
+    canReceiveShipment: boolean;
     isActive: boolean;
     createdAt: Date;
+}
+export declare class UpdateEmployeePermissionsDto {
+    canCreateShipment?: boolean;
+    canReceiveShipment?: boolean;
 }
 export declare class PointAssignmentResponseDto {
     id: string;

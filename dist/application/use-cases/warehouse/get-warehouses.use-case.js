@@ -22,6 +22,9 @@ let GetWarehousesUseCase = class GetWarehousesUseCase {
     async execute(userId) {
         return this.warehouseRepository.findByUserId(userId);
     }
+    async executeById(id) {
+        return this.warehouseRepository.findById(id);
+    }
     async executeByPointId(pointId) {
         return this.warehouseRepository.findByPointId(pointId);
     }

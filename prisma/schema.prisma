@@ -22,9 +22,11 @@ model User {
   firstName String
   lastName  String
   phone     String?
-  role      UserRole @default(ORGANIZER)
-  accountId String? // Организация к которой принадлежит (для сотрудников)
-  isActive  Boolean  @default(true)
+  role              UserRole @default(ORGANIZER)
+  accountId         String? // Организация к которой принадлежит (для сотрудников)
+  canCreateShipment Boolean  @default(false)
+  canReceiveShipment Boolean @default(false)
+  isActive          Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -60,8 +62,13 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  points   Point[]
-  settings OrgSettings?
+  points       Point[]
+  products     Product[]
+  settings     OrgSettings?
+  transfersOut Transfer[] @relation("TransferFromAccount")
+  transfersIn  Transfer[] @relation("TransferToAccount")
+  debtsOwed    Debt[]     @relation("DebtCreditorAccount")
+  debtsOwing   Debt[]     @relation("DebtDebtorAccount")
 
   @@index([ownerId])
 }
@@ -113,6 +120,7 @@ model OrgSettings {
   canAddEmployees   Boolean @default(true)
   canAddPoints      Boolean @default(true)
   canAddWarehouses  Boolean @default(true)
+  canAddProducts    Boolean @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -132,37 +140,57 @@ model Warehouse {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  stocks Stock[]
+  stocks       Stock[]
+  products     Product[]
+  transfersOut Transfer[] @relation("TransferFromWarehouse")
+  transfersIn  Transfer[] @relation("TransferToWarehouse")
 
   @@index([pointId])
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  sku         String   @unique
-  barcode     String?
-  description String?
-  unit        String   @default("шт")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  sku           String   // Артикул (货号)
+  photoOriginal String?  // Фото оригинал (физический)
+  photo         String?  // Фото товара
+  sizeRange     String?  // Код соответствия / размерный ряд (配码), e.g. "41-45/12221"
+  boxCount      Int      @default(0) // Количество коробок (件数)
+  pairCount     Int      @default(0) // Количество пар (双数)
+  priceYuan     Decimal  @db.Decimal(12, 2) // Цена в юанях (单价)
+  priceRub      Decimal  @db.Decimal(12, 2) // Цена в рублях
+  totalYuan     Decimal  @db.Decimal(12, 2) // Общая сумма в юанях (金额)
+  totalRub      Decimal  @db.Decimal(12, 2) // Общая сумма в рублях
+  recommendedSalePrice Decimal @default(0) @db.Decimal(12, 2) // Рекомендованная сумма продажи за коробку
+  totalRecommendedSale Decimal @default(0) @db.Decimal(12, 2) // Итого рекомендованная сумма продажи
+  actualSalePrice      Decimal @default(0) @db.Decimal(12, 2) // Фактическая сумма продажи за коробку
+  totalActualSale      Decimal @default(0) @db.Decimal(12, 2) // Итого фактическая сумма продажи
+  barcode       String?  // Баркод или QR-код данные
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  warehouseId   String?
+  warehouse     Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   stocks            Stock[]
   goodsReceiptItems GoodsReceiptItem[]
   transferItems     TransferItem[]
   saleItems         SaleItem[]
 
+  @@unique([sku, accountId, warehouseId])
   @@index([sku])
   @@index([barcode])
+  @@index([accountId])
+  @@index([warehouseId])
 }
 
 model Stock {
   id          String    @id @default(uuid())
   warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id])
+  productId   String?
+  product     Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
   quantity    Decimal   @db.Decimal(10, 3)
   costPrice   Decimal   @db.Decimal(12, 2)
   salePrice   Decimal   @db.Decimal(12, 2)
@@ -205,8 +233,8 @@ model GoodsReceiptItem {
   id             String       @id @default(uuid())
   goodsReceiptId String
   goodsReceipt   GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
-  productId      String
-  product        Product      @relation(fields: [productId], references: [id])
+  productId      String?
+  product        Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
   quantity       Decimal      @db.Decimal(10, 3)
   costPrice      Decimal      @db.Decimal(12, 2)
   salePrice      Decimal      @db.Decimal(12, 2)
@@ -216,28 +244,45 @@ model GoodsReceiptItem {
   @@index([productId])
 }
 
-// ==================== TRANSFERS ====================
+// ==================== TRANSFERS (SHIPMENTS) ====================
 
 model Transfer {
-  id          String         @id @default(uuid())
-  number      String         @unique
-  fromPointId String
-  fromPoint   Point          @relation("TransferFrom", fields: [fromPointId], references: [id])
-  toPointId   String
-  toPoint     Point          @relation("TransferTo", fields: [toPointId], references: [id])
-  totalAmount Decimal        @db.Decimal(12, 2)
-  status      TransferStatus @default(PENDING)
-  note        String?
-  sentAt      DateTime?
-  confirmedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                   String         @id @default(uuid())
+  number               String         @unique
+  fromAccountId        String
+  fromAccount          Account        @relation("TransferFromAccount", fields: [fromAccountId], references: [id])
+  toAccountId          String
+  toAccount            Account        @relation("TransferToAccount", fields: [toAccountId], references: [id])
+  fromPointId          String
+  fromPoint            Point          @relation("TransferFrom", fields: [fromPointId], references: [id])
+  toPointId            String
+  toPoint              Point          @relation("TransferTo", fields: [toPointId], references: [id])
+  fromWarehouseId      String?
+  fromWarehouse        Warehouse?     @relation("TransferFromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouseId        String?
+  toWarehouse          Warehouse?     @relation("TransferToWarehouse", fields: [toWarehouseId], references: [id])
+  totalYuan            Decimal        @db.Decimal(12, 2)
+  totalRub             Decimal        @db.Decimal(12, 2)
+  waybillPhoto         String?        // Фото накладной при отправке
+  transportPhoto       String?        // Фото транспорта
+  receiverWaybillPhoto String?        // Фото подписанной накладной при приёмке
+  status               TransferStatus @default(PENDING)
+  note                 String?
+  sentAt               DateTime?
+  receivedAt           DateTime?
+  confirmedAt          DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   items TransferItem[]
   debt  Debt?
 
+  @@index([fromAccountId])
+  @@index([toAccountId])
   @@index([fromPointId])
   @@index([toPointId])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
   @@index([number])
 }
 
@@ -249,15 +294,20 @@ enum TransferStatus {
 }
 
 model TransferItem {
-  id          String   @id @default(uuid())
-  transferId  String
-  transfer    Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  quantity    Decimal  @db.Decimal(10, 3)
-  costPrice   Decimal  @db.Decimal(12, 2)
-  salePrice   Decimal  @db.Decimal(12, 2)
-  totalAmount Decimal  @db.Decimal(12, 2)
+  id         String   @id @default(uuid())
+  transferId String
+  transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sku        String   // Артикул товара (копия на момент отправки)
+  photo      String?  // Фото товара (копия)
+  sizeRange  String?  // Размерный ряд (копия)
+  boxCount   Int      @default(0) // Количество коробок
+  pairCount  Int      @default(0) // Количество пар
+  priceYuan  Decimal  @db.Decimal(12, 2)
+  priceRub   Decimal  @db.Decimal(12, 2)
+  totalYuan  Decimal  @db.Decimal(12, 2)
+  totalRub   Decimal  @db.Decimal(12, 2)
 
   @@index([transferId])
   @@index([productId])
@@ -294,8 +344,8 @@ model SaleItem {
   id          String  @id @default(uuid())
   saleId      String
   sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product @relation(fields: [productId], references: [id])
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   quantity    Decimal @db.Decimal(10, 3)
   costPrice   Decimal @db.Decimal(12, 2)
   salePrice   Decimal @db.Decimal(12, 2)
@@ -309,21 +359,29 @@ model SaleItem {
 // ==================== DEBTS & PAYMENTS ====================
 
 model Debt {
-  id              String     @id @default(uuid())
-  creditorPointId String
-  creditorPoint   Point      @relation("DebtCreditor", fields: [creditorPointId], references: [id])
-  debtorPointId   String
-  debtorPoint     Point      @relation("DebtDebtor", fields: [debtorPointId], references: [id])
-  transferId      String     @unique
-  transfer        Transfer   @relation(fields: [transferId], references: [id])
-  originalAmount  Decimal    @db.Decimal(12, 2)
-  remainingAmount Decimal    @db.Decimal(12, 2)
-  status          DebtStatus @default(PENDING)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                 String     @id @default(uuid())
+  creditorAccountId  String
+  creditorAccount    Account    @relation("DebtCreditorAccount", fields: [creditorAccountId], references: [id])
+  debtorAccountId    String
+  debtorAccount      Account    @relation("DebtDebtorAccount", fields: [debtorAccountId], references: [id])
+  creditorPointId    String
+  creditorPoint      Point      @relation("DebtCreditor", fields: [creditorPointId], references: [id])
+  debtorPointId      String
+  debtorPoint        Point      @relation("DebtDebtor", fields: [debtorPointId], references: [id])
+  transferId         String     @unique
+  transfer           Transfer   @relation(fields: [transferId], references: [id])
+  originalAmountYuan Decimal    @db.Decimal(12, 2)
+  originalAmountRub  Decimal    @db.Decimal(12, 2)
+  remainingAmountYuan Decimal   @db.Decimal(12, 2)
+  remainingAmountRub  Decimal   @db.Decimal(12, 2)
+  status             DebtStatus @default(PENDING)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   payments Payment[]
 
+  @@index([creditorAccountId])
+  @@index([debtorAccountId])
   @@index([creditorPointId])
   @@index([debtorPointId])
 }
