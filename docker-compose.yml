@@ -41,6 +41,39 @@ services:
     networks:
       - mybusiness-internal
 
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: prisma-studio/Dockerfile
+    container_name: mybusiness-prisma-studio
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mybusiness-internal
+
+  prisma-studio-proxy:
+    build:
+      context: ./prisma-studio
+      dockerfile: Dockerfile.nginx
+    container_name: mybusiness-prisma-proxy
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      - VIRTUAL_HOST=studio-business.medlife.tj
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=studio-business.medlife.tj
+      - LETSENCRYPT_EMAIL=afprojects052000@gmail.com
+    depends_on:
+      - prisma-studio
+    networks:
+      - mybusiness-internal
+      - proxy-network
+
 volumes:
   postgres_data:
 
