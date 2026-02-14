@@ -112,7 +112,7 @@ export class AuthController {
         type: UserResponseDto,
     })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
-    async getMe(@CurrentUser('userId') userId: string): Promise<UserResponseDto> {
+    async getMe(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
         return this.getMeUseCase.execute(userId);
     }
 }

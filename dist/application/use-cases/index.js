@@ -20,4 +20,9 @@ __exportStar(require("./organization"), exports);
 __exportStar(require("./employee"), exports);
 __exportStar(require("./product"), exports);
 __exportStar(require("./shipment"), exports);
+__exportStar(require("./settings"), exports);
+__exportStar(require("./shop"), exports);
+__exportStar(require("./sale"), exports);
+__exportStar(require("./counterparty"), exports);
+__exportStar(require("./cash-register"), exports);
 //# sourceMappingURL=index.js.map

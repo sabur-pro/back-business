@@ -5,7 +5,7 @@ import {
     CreateWarehouseData,
     UpdateWarehouseData,
 } from '@domain/repositories/warehouse.repository.interface';
-import { WarehouseEntity } from '@domain/entities/warehouse.entity';
+import { WarehouseEntity, WarehouseType } from '@domain/entities/warehouse.entity';
 
 @Injectable()
 export class WarehouseRepository implements IWarehouseRepository {
@@ -18,16 +18,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 
         if (!warehouse) return null;
 
-        return WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
 
     async findByPointId(pointId: string): Promise<WarehouseEntity[]> {
@@ -36,18 +27,16 @@ export class WarehouseRepository implements IWarehouseRepository {
             orderBy: { createdAt: 'desc' },
         });
 
-        return warehouses.map((w) =>
-            WarehouseEntity.create({
-                id: w.id,
-                name: w.name,
-                pointId: w.pointId,
-                address: w.address,
-                description: w.description,
-                isActive: w.isActive,
-                createdAt: w.createdAt,
-                updatedAt: w.updatedAt,
-            }),
-        );
+        return warehouses.map((w) => this.mapToEntity(w));
+    }
+
+    async findByPointIdAndType(pointId: string, type: WarehouseType): Promise<WarehouseEntity[]> {
+        const warehouses = await this.prisma.warehouse.findMany({
+            where: { pointId, type },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return warehouses.map((w) => this.mapToEntity(w));
     }
 
     async findByPointIdAndName(pointId: string, name: string): Promise<WarehouseEntity | null> {
@@ -57,16 +46,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 
         if (!warehouse) return null;
 
-        return WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
 
     async findByUserId(userId: string): Promise<WarehouseEntity[]> {
@@ -104,24 +84,19 @@ export class WarehouseRepository implements IWarehouseRepository {
             return acc;
         }, [] as any[]);
 
-        return allWarehouses.map((w) =>
-            WarehouseEntity.create({
-                id: w.id,
-                name: w.name,
-                pointId: w.pointId,
-                address: w.address,
-                description: w.description,
-                isActive: w.isActive,
-                createdAt: w.createdAt,
-                updatedAt: w.updatedAt,
-            }),
-        );
+        return allWarehouses.map((w) => this.mapToEntity(w));
+    }
+
+    async findByUserIdAndType(userId: string, type: WarehouseType): Promise<WarehouseEntity[]> {
+        const all = await this.findByUserId(userId);
+        return all.filter((w) => w.type === type);
     }
 
     async create(data: CreateWarehouseData): Promise<WarehouseEntity> {
         const warehouse = await this.prisma.warehouse.create({
             data: {
                 name: data.name,
+                type: data.type ?? 'WAREHOUSE',
                 pointId: data.pointId,
                 address: data.address,
                 description: data.description,
@@ -129,16 +104,7 @@ export class WarehouseRepository implements IWarehouseRepository {
             },
         });
 
-        return WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
 
     async update(id: string, data: UpdateWarehouseData): Promise<WarehouseEntity> {
@@ -152,21 +118,26 @@ export class WarehouseRepository implements IWarehouseRepository {
             },
         });
 
-        return WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
 
     async delete(id: string): Promise<void> {
         await this.prisma.warehouse.delete({
             where: { id },
+        });
+    }
+
+    private mapToEntity(w: any): WarehouseEntity {
+        return WarehouseEntity.create({
+            id: w.id,
+            name: w.name,
+            type: w.type as WarehouseType,
+            pointId: w.pointId,
+            address: w.address,
+            description: w.description,
+            isActive: w.isActive,
+            createdAt: w.createdAt,
+            updatedAt: w.updatedAt,
         });
     }
 }

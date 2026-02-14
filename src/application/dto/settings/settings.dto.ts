@@ -21,6 +21,7 @@ export class UpdateOrgSettingsDto {
     @IsBoolean()
     @IsOptional()
     canAddProducts?: boolean;
+
 }
 
 export class OrgSettingsResponseDto {

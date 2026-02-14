@@ -5,3 +5,7 @@ export * from './employee.controller';
 export * from './settings.controller';
 export * from './product.controller';
 export * from './shipment.controller';
+export * from './shop.controller';
+export * from './sale.controller';
+export * from './counterparty.controller';
+export * from './cash-register.controller';

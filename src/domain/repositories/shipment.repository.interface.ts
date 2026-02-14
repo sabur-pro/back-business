@@ -48,6 +48,8 @@ export interface IShipmentRepository {
     findById(id: string): Promise<ShipmentEntity | null>;
     findByAccountOutgoing(accountId: string, params: ShipmentSearchParams): Promise<PaginatedShipments>;
     findByAccountIncoming(accountId: string, params: ShipmentSearchParams): Promise<PaginatedShipments>;
+    findByPointIds(pointIds: string[], params: ShipmentSearchParams): Promise<PaginatedShipments>;
+    findByAccountIds(accountIds: string[], params: ShipmentSearchParams): Promise<PaginatedShipments>;
     create(data: CreateShipmentData): Promise<ShipmentEntity>;
     updateStatus(id: string, status: string, data?: {
         receiverWaybillPhoto?: string;

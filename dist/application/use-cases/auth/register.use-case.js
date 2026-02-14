@@ -63,6 +63,8 @@ let RegisterUseCase = class RegisterUseCase {
             phone: user.phone || undefined,
             role: user.role,
             accountId: account.id,
+            canAddProducts: user.canAddProducts,
+            canManageCounterparties: user.canManageCounterparties,
         };
         return {
             accessToken: tokenPair.accessToken,

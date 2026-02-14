@@ -24,6 +24,12 @@ export class UserResponseDto {
 
     @ApiPropertyOptional({ description: 'ID организации (для сотрудников)' })
     accountId?: string;
+
+    @ApiPropertyOptional({ description: 'Может добавлять товары' })
+    canAddProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
+    canManageCounterparties?: boolean;
 }
 
 export class AuthResponseDto {

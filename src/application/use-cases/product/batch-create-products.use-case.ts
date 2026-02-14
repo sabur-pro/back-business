@@ -8,10 +8,6 @@ import {
     POINT_REPOSITORY,
 } from '@domain/repositories/point.repository.interface';
 import {
-    IOrgSettingsRepository,
-    ORG_SETTINGS_REPOSITORY,
-} from '@domain/repositories/org-settings.repository.interface';
-import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
@@ -23,8 +19,15 @@ import {
     IWarehouseRepository,
     WAREHOUSE_REPOSITORY,
 } from '@domain/repositories/warehouse.repository.interface';
+import {
+    ICounterpartyRepository,
+    COUNTERPARTY_REPOSITORY,
+} from '@domain/repositories/counterparty.repository.interface';
 import { ProductEntity } from '@domain/entities/product.entity';
+import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { UserRole } from '@domain/entities/user.entity';
+import { CounterpartyType } from '@domain/entities/counterparty.entity';
+import { CounterpartyTransactionType } from '@domain/entities/counterparty-transaction.entity';
 import { BatchCreateProductsDto, BatchCreateProductsResponseDto } from '@application/dto/product';
 
 @Injectable()
@@ -38,10 +41,10 @@ export class BatchCreateProductsUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
-        @Inject(ORG_SETTINGS_REPOSITORY)
-        private readonly orgSettingsRepository: IOrgSettingsRepository,
         @Inject(WAREHOUSE_REPOSITORY)
         private readonly warehouseRepository: IWarehouseRepository,
+        @Inject(COUNTERPARTY_REPOSITORY)
+        private readonly counterpartyRepository: ICounterpartyRepository,
     ) { }
 
     private normalizeSkuPrefix(char: string): string {
@@ -74,16 +77,25 @@ export class BatchCreateProductsUseCase {
         // Check permissions
         await this.checkPermissions(userId, user.role, dto.pointId, accountId);
 
-        // Validate all SKUs start with A or B and resolve warehouses
+        // Check if point has a shop but no regular warehouses — route all to shop
+        const shops = await this.warehouseRepository.findByPointIdAndType(dto.pointId, WarehouseType.SHOP);
+        const regularWarehouses = await this.warehouseRepository.findByPointIdAndType(dto.pointId, WarehouseType.WAREHOUSE);
+        const shopOnly = shops.length > 0 && regularWarehouses.length === 0;
+        const shopWarehouse = shopOnly ? shops[0] : null;
+
+        // Resolve warehouses for each product
         const warehouseCache = new Map<string, string>();
-        for (const item of dto.items) {
-            const warehouseName = this.getWarehouseNameBySku(item.sku);
-            if (!warehouseCache.has(warehouseName)) {
-                const warehouse = await this.warehouseRepository.findByPointIdAndName(dto.pointId, warehouseName);
-                if (!warehouse) {
-                    throw new NotFoundException(`Склад "${warehouseName}" не найден в данной точке. Создайте склад с названием "${warehouseName}".`);
+        if (!shopWarehouse) {
+            // No shop-only scenario — resolve by SKU prefix
+            for (const item of dto.items) {
+                const warehouseName = this.getWarehouseNameBySku(item.sku);
+                if (!warehouseCache.has(warehouseName)) {
+                    const warehouse = await this.warehouseRepository.findByPointIdAndName(dto.pointId, warehouseName);
+                    if (!warehouse) {
+                        throw new NotFoundException(`Склад "${warehouseName}" не найден в данной точке. Создайте склад с названием "${warehouseName}".`);
+                    }
+                    warehouseCache.set(warehouseName, warehouse.id);
                 }
-                warehouseCache.set(warehouseName, warehouse.id);
             }
         }
 
@@ -96,18 +108,21 @@ export class BatchCreateProductsUseCase {
 
         // Validate SKU uniqueness for all items within account + warehouse
         for (const item of dto.items) {
-            const warehouseName = this.getWarehouseNameBySku(item.sku);
-            const warehouseId = warehouseCache.get(warehouseName)!;
-            const existingProduct = await this.productRepository.findBySkuAndAccountId(item.sku, accountId, warehouseId);
+            const targetWarehouseId = shopWarehouse
+                ? shopWarehouse.id
+                : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
+            const existingProduct = await this.productRepository.findBySkuAndAccountId(item.sku, accountId, targetWarehouseId);
             if (existingProduct) {
-                throw new ConflictException(`Товар с артикулом "${item.sku}" уже существует на складе "${warehouseName}"`);
+                const label = shopWarehouse ? shopWarehouse.name : this.getWarehouseNameBySku(item.sku);
+                throw new ConflictException(`Товар с артикулом "${item.sku}" уже существует на складе "${label}"`);
             }
         }
 
         // Create all products
         const createData = dto.items.map((item) => {
-            const warehouseName = this.getWarehouseNameBySku(item.sku);
-            const warehouseId = warehouseCache.get(warehouseName)!;
+            const warehouseId = shopWarehouse
+                ? shopWarehouse.id
+                : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
             return {
                 sku: item.sku,
                 photoOriginal: item.photoOriginal,
@@ -130,6 +145,42 @@ export class BatchCreateProductsUseCase {
         });
 
         const products = await this.productRepository.createMany(createData);
+
+        // Handle supplier tracking
+        if (dto.supplierId) {
+            const supplier = await this.counterpartyRepository.findById(dto.supplierId);
+            if (!supplier) {
+                throw new NotFoundException('Поставщик не найден');
+            }
+            if (supplier.type !== CounterpartyType.SUPPLIER) {
+                throw new BadRequestException('Указанный контрагент не является поставщиком');
+            }
+
+            // Calculate total goods value
+            const totalGoodsRub = createData.reduce((sum, item) => sum + item.totalRub, 0);
+            const roundedTotal = Math.round(totalGoodsRub * 100) / 100;
+
+            // Record goods received from supplier (increases our debt)
+            await this.counterpartyRepository.createTransaction({
+                counterpartyId: dto.supplierId,
+                type: CounterpartyTransactionType.GOODS_RECEIVED,
+                amount: roundedTotal,
+                description: `Приход товаров на сумму ${roundedTotal} руб.`,
+            });
+            await this.counterpartyRepository.updateBalance(dto.supplierId, roundedTotal);
+
+            // Record payment if any
+            const paidAmount = dto.paidAmount ?? 0;
+            if (paidAmount > 0) {
+                await this.counterpartyRepository.createTransaction({
+                    counterpartyId: dto.supplierId,
+                    type: CounterpartyTransactionType.PAYMENT_OUT,
+                    amount: paidAmount,
+                    description: `Оплата поставщику при приходе`,
+                });
+                await this.counterpartyRepository.updateBalance(dto.supplierId, -paidAmount);
+            }
+        }
 
         return {
             products,
@@ -158,8 +209,8 @@ export class BatchCreateProductsUseCase {
                 throw new ForbiddenException('Нет доступа к данной точке');
             }
 
-            const settings = await this.orgSettingsRepository.findByAccountId(accountId);
-            if (!settings || !settings.canAddProducts) {
+            const user = await this.userRepository.findById(userId);
+            if (!user || !user.canAddProducts) {
                 throw new ForbiddenException('Организатор не предоставил право добавления товаров');
             }
             return;

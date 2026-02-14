@@ -50,6 +50,9 @@ export class GetPointEmployeesUseCase {
                     role: user.role,
                     canCreateShipment: user.canCreateShipment,
                     canReceiveShipment: user.canReceiveShipment,
+                    canSell: user.canSell,
+                    canAddProducts: user.canAddProducts,
+                    canManageCounterparties: user.canManageCounterparties,
                     isActive: user.isActive,
                     createdAt: user.createdAt,
                 });

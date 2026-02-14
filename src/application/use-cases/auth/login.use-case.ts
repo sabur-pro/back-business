@@ -62,6 +62,8 @@ export class LoginUseCase {
             phone: user.phone || undefined,
             role: user.role,
             accountId: user.accountId || undefined,
+            canAddProducts: user.canAddProducts,
+            canManageCounterparties: user.canManageCounterparties,
         };
 
         return {

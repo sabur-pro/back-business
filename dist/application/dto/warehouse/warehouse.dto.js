@@ -23,6 +23,13 @@ __decorate([
     __metadata("design:type", String)
 ], CreateWarehouseDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Тип: WAREHOUSE или SHOP', example: 'WAREHOUSE', enum: ['WAREHOUSE', 'SHOP'] }),
+    (0, class_validator_1.IsString)({ message: 'Тип должен быть строкой' }),
+    (0, class_validator_1.IsEnum)(['WAREHOUSE', 'SHOP'], { message: 'Тип должен быть WAREHOUSE или SHOP' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateWarehouseDto.prototype, "type", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ description: 'ID точки', example: 'uuid' }),
     (0, class_validator_1.IsString)({ message: 'ID точки должен быть строкой' }),
     (0, class_validator_1.IsNotEmpty)({ message: 'ID точки обязателен' }),
@@ -83,6 +90,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Название склада' }),
     __metadata("design:type", String)
 ], WarehouseResponseDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Тип: WAREHOUSE или SHOP', enum: ['WAREHOUSE', 'SHOP'] }),
+    __metadata("design:type", String)
+], WarehouseResponseDto.prototype, "type", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ description: 'ID точки' }),
     __metadata("design:type", String)

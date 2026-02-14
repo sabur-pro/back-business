@@ -8,6 +8,10 @@ import { SettingsModule } from './modules/settings.module';
 import { ProductModule } from './modules/product.module';
 import { UploadModule } from './modules/upload.module';
 import { ShipmentModule } from './modules/shipment.module';
+import { ShopModule } from './modules/shop.module';
+import { SaleModule } from './modules/sale.module';
+import { CounterpartyModule } from './modules/counterparty.module';
+import { CashRegisterModule } from './modules/cash-register.module';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 
 @Module({
@@ -25,6 +29,10 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
         ProductModule,
         UploadModule,
         ShipmentModule,
+        ShopModule,
+        SaleModule,
+        CounterpartyModule,
+        CashRegisterModule,
     ],
 })
 export class AppModule { }

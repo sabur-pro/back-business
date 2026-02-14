@@ -22,6 +22,7 @@ import {
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
 import { UserRole } from '@domain/entities/user.entity';
+import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { ShipmentEntity, ShipmentStatus } from '@domain/entities/shipment.entity';
 import { AcceptShipmentDto } from '@application/dto/shipment';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
@@ -81,17 +82,25 @@ export class AcceptShipmentUseCase {
         // 4. Check receiver access (sender cannot accept)
         await this.checkReceiverAccess(userId, user.role, shipment.toPointId, shipment.toAccountId);
 
-        // 5. Resolve receiver warehouses by SKU prefix
+        // 5. Resolve receiver warehouses
+        // If the destination point has a SHOP, route all products directly to the shop.
+        // Otherwise, fall back to SKU-prefix-based routing ("Мужской" / "Женский").
+        const shops = await this.warehouseRepository.findByPointIdAndType(shipment.toPointId, WarehouseType.SHOP);
+        const shopWarehouse = shops.length > 0 ? shops[0] : null;
+
         const warehouseCache = new Map<string, string>();
 
-        for (const item of shipment.items) {
-            const warehouseName = this.getWarehouseNameBySku(item.sku);
-            if (!warehouseCache.has(warehouseName)) {
-                const warehouse = await this.warehouseRepository.findByPointIdAndName(shipment.toPointId, warehouseName);
-                if (!warehouse) {
-                    throw new NotFoundException(`Склад "${warehouseName}" не найден в точке получателя. Создайте склад с названием "${warehouseName}".`);
+        if (!shopWarehouse) {
+            // No shop — resolve by SKU prefix
+            for (const item of shipment.items) {
+                const warehouseName = this.getWarehouseNameBySku(item.sku);
+                if (!warehouseCache.has(warehouseName)) {
+                    const warehouse = await this.warehouseRepository.findByPointIdAndName(shipment.toPointId, warehouseName);
+                    if (!warehouse) {
+                        throw new NotFoundException(`Склад "${warehouseName}" не найден в точке получателя. Создайте склад с названием "${warehouseName}".`);
+                    }
+                    warehouseCache.set(warehouseName, warehouse.id);
                 }
-                warehouseCache.set(warehouseName, warehouse.id);
             }
         }
 
@@ -100,8 +109,10 @@ export class AcceptShipmentUseCase {
 
         await this.prisma.$transaction(async (tx) => {
             for (const item of shipment.items) {
-                const warehouseName = this.getWarehouseNameBySku(item.sku);
-                const targetWarehouseId = warehouseCache.get(warehouseName)!;
+                // If shop exists — all go to shop; otherwise resolve by SKU
+                const targetWarehouseId = shopWarehouse
+                    ? shopWarehouse.id
+                    : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
 
                 // Check if product with same SKU already exists in receiver's target warehouse
                 const existingProduct = await tx.product.findFirst({

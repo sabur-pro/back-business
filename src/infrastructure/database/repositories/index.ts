@@ -7,3 +7,7 @@ export * from './point-member.repository';
 export * from './org-settings.repository';
 export * from './product.repository';
 export * from './shipment.repository';
+export * from './shop-employee.repository';
+export * from './sale.repository';
+export * from './counterparty.repository';
+export * from './cash-register.repository';

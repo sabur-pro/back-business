@@ -6,9 +6,9 @@ import {
     PointRepository,
     UserRepository,
     PointMemberRepository,
-    OrgSettingsRepository,
     AccountRepository,
     WarehouseRepository,
+    CounterpartyRepository,
 } from '@infrastructure/database/repositories';
 import {
     PRODUCT_REPOSITORY,
@@ -26,11 +26,11 @@ import {
     POINT_MEMBER_REPOSITORY,
 } from '@domain/repositories/point-member.repository.interface';
 import {
-    ORG_SETTINGS_REPOSITORY,
-} from '@domain/repositories/org-settings.repository.interface';
-import {
     ACCOUNT_REPOSITORY,
 } from '@domain/repositories/account.repository.interface';
+import {
+    COUNTERPARTY_REPOSITORY,
+} from '@domain/repositories/counterparty.repository.interface';
 import {
     CreateProductUseCase,
     GetProductsUseCase,
@@ -61,16 +61,16 @@ import {
             useClass: PointMemberRepository,
         },
         {
-            provide: ORG_SETTINGS_REPOSITORY,
-            useClass: OrgSettingsRepository,
-        },
-        {
             provide: ACCOUNT_REPOSITORY,
             useClass: AccountRepository,
         },
         {
             provide: WAREHOUSE_REPOSITORY,
             useClass: WarehouseRepository,
+        },
+        {
+            provide: COUNTERPARTY_REPOSITORY,
+            useClass: CounterpartyRepository,
         },
         // Use Cases
         CreateProductUseCase,

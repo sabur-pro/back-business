@@ -1,5 +1,6 @@
 export declare class CreateWarehouseDto {
     name: string;
+    type?: string;
     pointId: string;
     address?: string;
     description?: string;
@@ -13,6 +14,7 @@ export declare class UpdateWarehouseDto {
 export declare class WarehouseResponseDto {
     id: string;
     name: string;
+    type: string;
     pointId: string;
     address: string | null;
     description: string | null;

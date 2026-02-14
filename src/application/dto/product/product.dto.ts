@@ -323,6 +323,18 @@ export class BatchCreateProductsDto {
     @IsOptional()
     warehouseId?: string;
 
+    @ApiPropertyOptional({ description: 'ID поставщика (контрагент)', example: 'uuid' })
+    @IsString({ message: 'ID поставщика должен быть строкой' })
+    @IsOptional()
+    supplierId?: string;
+
+    @ApiPropertyOptional({ description: 'Сумма оплаты поставщику', example: 4000 })
+    @IsNumber({}, { message: 'Сумма оплаты должна быть числом' })
+    @Min(0, { message: 'Сумма оплаты не может быть отрицательной' })
+    @IsOptional()
+    @Type(() => Number)
+    paidAmount?: number;
+
     @ApiProperty({ description: 'Список товаров для добавления', type: [BatchProductItemDto] })
     @IsArray({ message: 'items должен быть массивом' })
     @ArrayMinSize(1, { message: 'Минимум 1 товар' })

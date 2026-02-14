@@ -8,10 +8,6 @@ import {
     POINT_REPOSITORY,
 } from '@domain/repositories/point.repository.interface';
 import {
-    IOrgSettingsRepository,
-    ORG_SETTINGS_REPOSITORY,
-} from '@domain/repositories/org-settings.repository.interface';
-import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
@@ -34,8 +30,6 @@ export class CreateProductUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
-        @Inject(ORG_SETTINGS_REPOSITORY)
-        private readonly orgSettingsRepository: IOrgSettingsRepository,
     ) { }
 
     async execute(userId: string, dto: CreateProductDto): Promise<ProductEntity> {
@@ -100,9 +94,8 @@ export class CreateProductUseCase {
                 throw new ForbiddenException('Нет доступа к данной точке');
             }
 
-            // Check if organizer granted canAddProducts permission
-            const settings = await this.orgSettingsRepository.findByAccountId(accountId);
-            if (!settings || !settings.canAddProducts) {
+            const user = await this.userRepository.findById(userId);
+            if (!user || !user.canAddProducts) {
                 throw new ForbiddenException('Организатор не предоставил право добавления товаров');
             }
             return;

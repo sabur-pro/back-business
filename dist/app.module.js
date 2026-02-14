@@ -17,6 +17,10 @@ const settings_module_1 = require("./modules/settings.module");
 const product_module_1 = require("./modules/product.module");
 const upload_module_1 = require("./modules/upload.module");
 const shipment_module_1 = require("./modules/shipment.module");
+const shop_module_1 = require("./modules/shop.module");
+const sale_module_1 = require("./modules/sale.module");
+const counterparty_module_1 = require("./modules/counterparty.module");
+const cash_register_module_1 = require("./modules/cash-register.module");
 const prisma_module_1 = require("./infrastructure/database/prisma/prisma.module");
 let AppModule = class AppModule {
 };
@@ -37,6 +41,10 @@ exports.AppModule = AppModule = __decorate([
             product_module_1.ProductModule,
             upload_module_1.UploadModule,
             shipment_module_1.ShipmentModule,
+            shop_module_1.ShopModule,
+            sale_module_1.SaleModule,
+            counterparty_module_1.CounterpartyModule,
+            cash_register_module_1.CashRegisterModule,
         ],
     })
 ], AppModule);

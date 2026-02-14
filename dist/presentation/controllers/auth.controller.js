@@ -129,7 +129,7 @@ __decorate([
         type: auth_2.UserResponseDto,
     }),
     (0, swagger_1.ApiResponse)({ status: 401, description: 'Не авторизован' }),
-    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)

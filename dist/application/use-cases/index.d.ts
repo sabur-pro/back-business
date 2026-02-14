@@ -4,3 +4,8 @@ export * from './organization';
 export * from './employee';
 export * from './product';
 export * from './shipment';
+export * from './settings';
+export * from './shop';
+export * from './sale';
+export * from './counterparty';
+export * from './cash-register';

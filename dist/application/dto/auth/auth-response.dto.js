@@ -46,6 +46,14 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'ID организации (для сотрудников)' }),
     __metadata("design:type", String)
 ], UserResponseDto.prototype, "accountId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может добавлять товары' }),
+    __metadata("design:type", Boolean)
+], UserResponseDto.prototype, "canAddProducts", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может управлять контрагентами' }),
+    __metadata("design:type", Boolean)
+], UserResponseDto.prototype, "canManageCounterparties", void 0);
 class AuthResponseDto {
 }
 exports.AuthResponseDto = AuthResponseDto;

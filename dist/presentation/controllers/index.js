@@ -21,4 +21,8 @@ __exportStar(require("./employee.controller"), exports);
 __exportStar(require("./settings.controller"), exports);
 __exportStar(require("./product.controller"), exports);
 __exportStar(require("./shipment.controller"), exports);
+__exportStar(require("./shop.controller"), exports);
+__exportStar(require("./sale.controller"), exports);
+__exportStar(require("./counterparty.controller"), exports);
+__exportStar(require("./cash-register.controller"), exports);
 //# sourceMappingURL=index.js.map

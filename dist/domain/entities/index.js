@@ -24,4 +24,11 @@ __exportStar(require("./org-settings.entity"), exports);
 __exportStar(require("./product.entity"), exports);
 __exportStar(require("./shipment.entity"), exports);
 __exportStar(require("./shipment-item.entity"), exports);
+__exportStar(require("./shop-employee.entity"), exports);
+__exportStar(require("./sale.entity"), exports);
+__exportStar(require("./sale-item.entity"), exports);
+__exportStar(require("./counterparty.entity"), exports);
+__exportStar(require("./counterparty-transaction.entity"), exports);
+__exportStar(require("./cash-register.entity"), exports);
+__exportStar(require("./cash-transaction.entity"), exports);
 //# sourceMappingURL=index.js.map

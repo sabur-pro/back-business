@@ -7,6 +7,8 @@ export declare class UserResponseDto {
     phone?: string;
     role: string;
     accountId?: string;
+    canAddProducts?: boolean;
+    canManageCounterparties?: boolean;
 }
 export declare class AuthResponseDto {
     accessToken: string;

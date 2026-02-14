@@ -8,10 +8,6 @@ import {
     POINT_REPOSITORY,
 } from '@domain/repositories/point.repository.interface';
 import {
-    IOrgSettingsRepository,
-    ORG_SETTINGS_REPOSITORY,
-} from '@domain/repositories/org-settings.repository.interface';
-import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
@@ -32,8 +28,6 @@ export class DeleteProductUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
-        @Inject(ORG_SETTINGS_REPOSITORY)
-        private readonly orgSettingsRepository: IOrgSettingsRepository,
     ) { }
 
     async execute(userId: string, productId: string): Promise<void> {
@@ -102,8 +96,8 @@ export class DeleteProductUseCase {
                 throw new ForbiddenException('Нет доступа к данному товару');
             }
 
-            const settings = await this.orgSettingsRepository.findByAccountId(accountId);
-            if (!settings || !settings.canAddProducts) {
+            const user = await this.userRepository.findById(userId);
+            if (!user || !user.canAddProducts) {
                 throw new ForbiddenException('Организатор не предоставил право управления товарами');
             }
             return;

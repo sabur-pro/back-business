@@ -148,6 +148,82 @@ export class ShipmentRepository implements IShipmentRepository {
         };
     }
 
+    async findByPointIds(
+        pointIds: string[],
+        params: ShipmentSearchParams,
+    ): Promise<PaginatedShipments> {
+        const page = params.page ?? 1;
+        const limit = params.limit ?? 20;
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            OR: [
+                { fromPointId: { in: pointIds } },
+                { toPointId: { in: pointIds } },
+            ],
+        };
+        if (params.status) {
+            where.status = params.status;
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.transfer.findMany({
+                where,
+                include: INCLUDE_RELATIONS,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.transfer.count({ where }),
+        ]);
+
+        return {
+            items: items.map((t) => this.toEntity(t)),
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async findByAccountIds(
+        accountIds: string[],
+        params: ShipmentSearchParams,
+    ): Promise<PaginatedShipments> {
+        const page = params.page ?? 1;
+        const limit = params.limit ?? 20;
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            OR: [
+                { fromAccountId: { in: accountIds } },
+                { toAccountId: { in: accountIds } },
+            ],
+        };
+        if (params.status) {
+            where.status = params.status;
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.transfer.findMany({
+                where,
+                include: INCLUDE_RELATIONS,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.transfer.count({ where }),
+        ]);
+
+        return {
+            items: items.map((t) => this.toEntity(t)),
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
     async create(data: CreateShipmentData): Promise<ShipmentEntity> {
         const transfer = await this.prisma.transfer.create({
             data: {

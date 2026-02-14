@@ -22,6 +22,9 @@ export class UserEntity {
         public readonly accountId: string | null,
         public readonly canCreateShipment: boolean,
         public readonly canReceiveShipment: boolean,
+        public readonly canSell: boolean,
+        public readonly canAddProducts: boolean,
+        public readonly canManageCounterparties: boolean,
         public readonly isActive: boolean,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
@@ -50,6 +53,9 @@ export class UserEntity {
         accountId?: string | null;
         canCreateShipment?: boolean;
         canReceiveShipment?: boolean;
+        canSell?: boolean;
+        canAddProducts?: boolean;
+        canManageCounterparties?: boolean;
         isActive?: boolean;
         createdAt?: Date;
         updatedAt?: Date;
@@ -65,6 +71,9 @@ export class UserEntity {
             props.accountId ?? null,
             props.canCreateShipment ?? false,
             props.canReceiveShipment ?? false,
+            props.canSell ?? false,
+            props.canAddProducts ?? false,
+            props.canManageCounterparties ?? false,
             props.isActive ?? true,
             props.createdAt ?? new Date(),
             props.updatedAt ?? new Date(),

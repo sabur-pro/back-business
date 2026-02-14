@@ -1,0 +1,130 @@
+import {
+    Inject,
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
+import {
+    ISaleRepository,
+    SALE_REPOSITORY,
+} from '@domain/repositories/sale.repository.interface';
+import {
+    ICashRegisterRepository,
+    CASH_REGISTER_REPOSITORY,
+} from '@domain/repositories/cash-register.repository.interface';
+import {
+    ICounterpartyRepository,
+    COUNTERPARTY_REPOSITORY,
+} from '@domain/repositories/counterparty.repository.interface';
+import { SaleEntity, SaleStatus, PaymentMethod } from '@domain/entities/sale.entity';
+import { CashTransactionType } from '@domain/entities/cash-transaction.entity';
+import { CounterpartyTransactionType } from '@domain/entities/counterparty-transaction.entity';
+import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
+
+@Injectable()
+export class CancelSaleUseCase {
+    constructor(
+        @Inject(SALE_REPOSITORY)
+        private readonly saleRepository: ISaleRepository,
+        @Inject(CASH_REGISTER_REPOSITORY)
+        private readonly cashRegisterRepository: ICashRegisterRepository,
+        @Inject(COUNTERPARTY_REPOSITORY)
+        private readonly counterpartyRepository: ICounterpartyRepository,
+        private readonly prisma: PrismaService,
+    ) { }
+
+    async execute(saleId: string): Promise<SaleEntity> {
+        const sale = await this.saleRepository.findById(saleId);
+        if (!sale) {
+            throw new NotFoundException('Продажа не найдена');
+        }
+
+        if (sale.status === SaleStatus.CANCELLED) {
+            throw new BadRequestException('Продажа уже отменена');
+        }
+
+        // Return products to shop in a transaction
+        await this.prisma.$transaction(async (tx) => {
+            for (const item of sale.items) {
+                if (!item.productId) continue;
+
+                const product = await tx.product.findUnique({
+                    where: { id: item.productId },
+                });
+
+                if (product) {
+                    const newBoxCount = product.boxCount + item.boxCount;
+                    const newPairCount = product.pairCount + item.pairCount;
+                    const newTotalYuan = Number(product.priceYuan) * newPairCount;
+                    const newTotalRub = Number(product.priceRub) * newPairCount;
+
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            boxCount: newBoxCount,
+                            pairCount: newPairCount,
+                            totalYuan: Math.round(newTotalYuan * 100) / 100,
+                            totalRub: Math.round(newTotalRub * 100) / 100,
+                            totalRecommendedSale: Number(product.recommendedSalePrice) * newPairCount,
+                            totalActualSale: Number(product.actualSalePrice) * newPairCount,
+                        },
+                    });
+                }
+            }
+
+            await tx.sale.update({
+                where: { id: saleId },
+                data: { status: 'CANCELLED' },
+            });
+        });
+
+        // Reverse client counterparty balance if sale had a client
+        if (sale.clientId) {
+            // Reverse GOODS_SOLD: decrease client debt by totalActual
+            await this.counterpartyRepository.createTransaction({
+                counterpartyId: sale.clientId,
+                type: CounterpartyTransactionType.GOODS_SOLD,
+                amount: -sale.totalActual,
+                description: `Отмена продажи ${sale.number}`,
+                relatedId: sale.id,
+            });
+            await this.counterpartyRepository.updateBalance(sale.clientId, -sale.totalActual);
+
+            // Reverse PAYMENT_IN: restore client debt by paidAmount
+            if (sale.paidAmount > 0) {
+                await this.counterpartyRepository.createTransaction({
+                    counterpartyId: sale.clientId,
+                    type: CounterpartyTransactionType.PAYMENT_IN,
+                    amount: -sale.paidAmount,
+                    description: `Отмена оплаты по продаже ${sale.number}`,
+                    relatedId: sale.id,
+                });
+                await this.counterpartyRepository.updateBalance(sale.clientId, sale.paidAmount);
+            }
+        }
+
+        // Reverse cash register balance if there was payment
+        if (sale.paidAmount > 0) {
+            const register = await this.cashRegisterRepository.findByShopId(sale.shopId);
+            if (register) {
+                const txType = sale.paymentMethod === PaymentMethod.CARD
+                    ? CashTransactionType.SALE_INCOME_CARD
+                    : CashTransactionType.SALE_INCOME;
+                await this.cashRegisterRepository.createTransaction({
+                    cashRegisterId: register.id,
+                    type: txType,
+                    amount: -sale.paidAmount,
+                    description: `Отмена продажи ${sale.number}`,
+                    relatedId: sale.id,
+                });
+                if (sale.paymentMethod === PaymentMethod.CARD) {
+                    await this.cashRegisterRepository.updateCardBalance(register.id, -sale.paidAmount);
+                } else {
+                    await this.cashRegisterRepository.updateBalance(register.id, -sale.paidAmount);
+                }
+            }
+        }
+
+        return this.saleRepository.findById(saleId) as Promise<SaleEntity>;
+    }
+}

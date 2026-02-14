@@ -23,32 +23,21 @@ let WarehouseRepository = class WarehouseRepository {
         });
         if (!warehouse)
             return null;
-        return warehouse_entity_1.WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
     async findByPointId(pointId) {
         const warehouses = await this.prisma.warehouse.findMany({
             where: { pointId },
             orderBy: { createdAt: 'desc' },
         });
-        return warehouses.map((w) => warehouse_entity_1.WarehouseEntity.create({
-            id: w.id,
-            name: w.name,
-            pointId: w.pointId,
-            address: w.address,
-            description: w.description,
-            isActive: w.isActive,
-            createdAt: w.createdAt,
-            updatedAt: w.updatedAt,
-        }));
+        return warehouses.map((w) => this.mapToEntity(w));
+    }
+    async findByPointIdAndType(pointId, type) {
+        const warehouses = await this.prisma.warehouse.findMany({
+            where: { pointId, type },
+            orderBy: { createdAt: 'desc' },
+        });
+        return warehouses.map((w) => this.mapToEntity(w));
     }
     async findByPointIdAndName(pointId, name) {
         const warehouse = await this.prisma.warehouse.findFirst({
@@ -56,16 +45,7 @@ let WarehouseRepository = class WarehouseRepository {
         });
         if (!warehouse)
             return null;
-        return warehouse_entity_1.WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
     async findByUserId(userId) {
         const ownedWarehouses = await this.prisma.warehouse.findMany({
@@ -96,37 +76,24 @@ let WarehouseRepository = class WarehouseRepository {
             }
             return acc;
         }, []);
-        return allWarehouses.map((w) => warehouse_entity_1.WarehouseEntity.create({
-            id: w.id,
-            name: w.name,
-            pointId: w.pointId,
-            address: w.address,
-            description: w.description,
-            isActive: w.isActive,
-            createdAt: w.createdAt,
-            updatedAt: w.updatedAt,
-        }));
+        return allWarehouses.map((w) => this.mapToEntity(w));
+    }
+    async findByUserIdAndType(userId, type) {
+        const all = await this.findByUserId(userId);
+        return all.filter((w) => w.type === type);
     }
     async create(data) {
         const warehouse = await this.prisma.warehouse.create({
             data: {
                 name: data.name,
+                type: data.type ?? 'WAREHOUSE',
                 pointId: data.pointId,
                 address: data.address,
                 description: data.description,
                 isActive: data.isActive ?? true,
             },
         });
-        return warehouse_entity_1.WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
     async update(id, data) {
         const warehouse = await this.prisma.warehouse.update({
@@ -138,20 +105,24 @@ let WarehouseRepository = class WarehouseRepository {
                 isActive: data.isActive,
             },
         });
-        return warehouse_entity_1.WarehouseEntity.create({
-            id: warehouse.id,
-            name: warehouse.name,
-            pointId: warehouse.pointId,
-            address: warehouse.address,
-            description: warehouse.description,
-            isActive: warehouse.isActive,
-            createdAt: warehouse.createdAt,
-            updatedAt: warehouse.updatedAt,
-        });
+        return this.mapToEntity(warehouse);
     }
     async delete(id) {
         await this.prisma.warehouse.delete({
             where: { id },
+        });
+    }
+    mapToEntity(w) {
+        return warehouse_entity_1.WarehouseEntity.create({
+            id: w.id,
+            name: w.name,
+            type: w.type,
+            pointId: w.pointId,
+            address: w.address,
+            description: w.description,
+            isActive: w.isActive,
+            createdAt: w.createdAt,
+            updatedAt: w.updatedAt,
         });
     }
 };

@@ -79,6 +79,16 @@ export class ShipmentController {
         return this.cancelShipmentUseCase.execute(userId, id) as any;
     }
 
+    @Get('my')
+    @ApiOperation({ summary: 'Мои заявки (все видимые текущему пользователю)' })
+    @ApiResponse({ status: 200, description: 'Список заявок', type: PaginatedShipmentsResponseDto })
+    async getMyShipments(
+        @CurrentUser('id') userId: string,
+        @Query() query: ShipmentSearchQueryDto,
+    ): Promise<PaginatedShipmentsResponseDto> {
+        return this.getShipmentsUseCase.getMyShipments(userId, query) as any;
+    }
+
     @Get('outgoing/:accountId')
     @ApiOperation({ summary: 'Список исходящих отправок' })
     @ApiResponse({ status: 200, description: 'Список отправок', type: PaginatedShipmentsResponseDto })

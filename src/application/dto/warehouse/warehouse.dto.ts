@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength, IsEnum } from 'class-validator';
 
 export class CreateWarehouseDto {
     @ApiProperty({ description: 'Название склада', example: 'Основной склад' })
@@ -7,6 +7,12 @@ export class CreateWarehouseDto {
     @IsNotEmpty({ message: 'Название обязательно' })
     @MaxLength(100, { message: 'Название не более 100 символов' })
     name: string;
+
+    @ApiPropertyOptional({ description: 'Тип: WAREHOUSE или SHOP', example: 'WAREHOUSE', enum: ['WAREHOUSE', 'SHOP'] })
+    @IsString({ message: 'Тип должен быть строкой' })
+    @IsEnum(['WAREHOUSE', 'SHOP'], { message: 'Тип должен быть WAREHOUSE или SHOP' })
+    @IsOptional()
+    type?: string;
 
     @ApiProperty({ description: 'ID точки', example: 'uuid' })
     @IsString({ message: 'ID точки должен быть строкой' })
@@ -57,6 +63,9 @@ export class WarehouseResponseDto {
 
     @ApiProperty({ description: 'Название склада' })
     name: string;
+
+    @ApiProperty({ description: 'Тип: WAREHOUSE или SHOP', enum: ['WAREHOUSE', 'SHOP'] })
+    type: string;
 
     @ApiProperty({ description: 'ID точки' })
     pointId: string;

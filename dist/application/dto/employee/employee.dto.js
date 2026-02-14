@@ -96,6 +96,18 @@ __decorate([
     __metadata("design:type", Boolean)
 ], EmployeeResponseDto.prototype, "canReceiveShipment", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Может продавать товар' }),
+    __metadata("design:type", Boolean)
+], EmployeeResponseDto.prototype, "canSell", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Может добавлять товары' }),
+    __metadata("design:type", Boolean)
+], EmployeeResponseDto.prototype, "canAddProducts", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Может управлять контрагентами' }),
+    __metadata("design:type", Boolean)
+], EmployeeResponseDto.prototype, "canManageCounterparties", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ description: 'Активен' }),
     __metadata("design:type", Boolean)
 ], EmployeeResponseDto.prototype, "isActive", void 0);
@@ -118,6 +130,24 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateEmployeePermissionsDto.prototype, "canReceiveShipment", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может продавать товар' }),
+    (0, class_validator_1.IsBoolean)({ message: 'canSell должен быть boolean' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateEmployeePermissionsDto.prototype, "canSell", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может добавлять товары' }),
+    (0, class_validator_1.IsBoolean)({ message: 'canAddProducts должен быть boolean' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateEmployeePermissionsDto.prototype, "canAddProducts", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Может управлять контрагентами' }),
+    (0, class_validator_1.IsBoolean)({ message: 'canManageCounterparties должен быть boolean' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateEmployeePermissionsDto.prototype, "canManageCounterparties", void 0);
 class PointAssignmentResponseDto {
 }
 exports.PointAssignmentResponseDto = PointAssignmentResponseDto;

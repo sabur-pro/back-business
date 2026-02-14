@@ -26,6 +26,9 @@ model User {
   accountId         String? // Организация к которой принадлежит (для сотрудников)
   canCreateShipment Boolean  @default(false)
   canReceiveShipment Boolean @default(false)
+  canSell            Boolean  @default(false)
+  canAddProducts     Boolean  @default(false)
+  canManageCounterparties Boolean @default(false)
   isActive          Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -33,6 +36,7 @@ model User {
   account          Account?       @relation("AccountMembers", fields: [accountId], references: [id])
   ownedAccounts    Account[]      @relation("AccountOwner")
   pointAssignments PointMember[]
+  shopAssignments  ShopEmployee[]
   refreshTokens    RefreshToken[]
 
   @@index([accountId])
@@ -65,10 +69,11 @@ model Account {
   points       Point[]
   products     Product[]
   settings     OrgSettings?
-  transfersOut Transfer[] @relation("TransferFromAccount")
-  transfersIn  Transfer[] @relation("TransferToAccount")
-  debtsOwed    Debt[]     @relation("DebtCreditorAccount")
-  debtsOwing   Debt[]     @relation("DebtDebtorAccount")
+  counterparties Counterparty[]
+  transfersOut   Transfer[] @relation("TransferFromAccount")
+  transfersIn    Transfer[] @relation("TransferToAccount")
+  debtsOwed      Debt[]     @relation("DebtCreditorAccount")
+  debtsOwing     Debt[]     @relation("DebtDebtorAccount")
 
   @@index([ownerId])
 }
@@ -127,25 +132,48 @@ model OrgSettings {
   @@index([accountId])
 }
 
-// ==================== WAREHOUSES & STOCK ====================
+// ==================== WAREHOUSES & SHOPS ====================
+
+enum WarehouseType {
+  WAREHOUSE
+  SHOP
+}
 
 model Warehouse {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   name        String
+  type        WarehouseType @default(WAREHOUSE)
   pointId     String
-  point       Point    @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  point       Point         @relation(fields: [pointId], references: [id], onDelete: Cascade)
   address     String?
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  stocks       Stock[]
-  products     Product[]
-  transfersOut Transfer[] @relation("TransferFromWarehouse")
-  transfersIn  Transfer[] @relation("TransferToWarehouse")
+  stocks        Stock[]
+  products      Product[]
+  transfersOut  Transfer[]     @relation("TransferFromWarehouse")
+  transfersIn   Transfer[]     @relation("TransferToWarehouse")
+  shopEmployees ShopEmployee[]
+  sales         Sale[]         @relation("SaleShop")
+  cashRegister  CashRegister?
 
   @@index([pointId])
+  @@index([type])
+}
+
+model ShopEmployee {
+  id          String   @id @default(uuid())
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([warehouseId, userId])
+  @@index([warehouseId])
+  @@index([userId])
 }
 
 model Product {
@@ -211,7 +239,10 @@ model GoodsReceipt {
   point        Point              @relation(fields: [pointId], references: [id])
   warehouseId  String
   supplierName String?
+  supplierId   String?
+  supplier     Counterparty?      @relation("GoodsReceiptSupplier", fields: [supplierId], references: [id])
   totalAmount  Decimal            @db.Decimal(12, 2)
+  paidAmount   Decimal            @db.Decimal(12, 2) @default(0) // Сколько мы заплатили поставщику
   note         String?
   status       GoodsReceiptStatus @default(PENDING)
   createdAt    DateTime           @default(now())
@@ -220,6 +251,7 @@ model GoodsReceipt {
   items GoodsReceiptItem[]
 
   @@index([pointId])
+  @@index([supplierId])
   @@index([number])
 }
 
@@ -315,23 +347,40 @@ model TransferItem {
 
 // ==================== SALES ====================
 
+enum PaymentMethod {
+  CASH  // Наличные
+  CARD  // Карта
+}
+
 model Sale {
-  id          String     @id @default(uuid())
-  number      String     @unique
-  pointId     String
-  point       Point      @relation(fields: [pointId], references: [id])
-  warehouseId String
-  totalAmount Decimal    @db.Decimal(12, 2)
-  totalCost   Decimal    @db.Decimal(12, 2)
-  profit      Decimal    @db.Decimal(12, 2)
-  status      SaleStatus @default(COMPLETED)
-  note        String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id               String         @id @default(uuid())
+  number           String         @unique
+  pointId          String
+  point            Point          @relation(fields: [pointId], references: [id])
+  shopId           String
+  shop             Warehouse      @relation("SaleShop", fields: [shopId], references: [id])
+  accountId        String
+  clientId         String?
+  client           Counterparty?  @relation("SaleClient", fields: [clientId], references: [id])
+  totalYuan        Decimal        @db.Decimal(12, 2)
+  totalRub         Decimal        @db.Decimal(12, 2)
+  totalRecommended Decimal        @db.Decimal(12, 2)
+  totalActual      Decimal        @db.Decimal(12, 2)
+  paidAmount       Decimal        @db.Decimal(12, 2) @default(0) // Сколько клиент заплатил
+  paymentMethod    PaymentMethod  @default(CASH) // Тип оплаты
+  profit           Decimal        @db.Decimal(12, 2)
+  status           SaleStatus     @default(COMPLETED)
+  note             String?
+  soldById         String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   items SaleItem[]
 
   @@index([pointId])
+  @@index([shopId])
+  @@index([accountId])
+  @@index([clientId])
   @@index([number])
 }
 
@@ -341,19 +390,176 @@ enum SaleStatus {
 }
 
 model SaleItem {
-  id          String  @id @default(uuid())
-  saleId      String
-  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  productId   String?
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  quantity    Decimal @db.Decimal(10, 3)
-  costPrice   Decimal @db.Decimal(12, 2)
-  salePrice   Decimal @db.Decimal(12, 2)
-  totalAmount Decimal @db.Decimal(12, 2)
-  profit      Decimal @db.Decimal(12, 2)
+  id                   String  @id @default(uuid())
+  saleId               String
+  sale                 Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId            String?
+  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sku                  String
+  photo                String?
+  sizeRange            String?
+  boxCount             Int     @default(0)
+  pairCount            Int     @default(0)
+  priceYuan            Decimal @db.Decimal(12, 2)
+  priceRub             Decimal @db.Decimal(12, 2)
+  totalYuan            Decimal @db.Decimal(12, 2)
+  totalRub             Decimal @db.Decimal(12, 2)
+  recommendedSalePrice Decimal @db.Decimal(12, 2)
+  actualSalePrice      Decimal @db.Decimal(12, 2)
+  totalRecommended     Decimal @db.Decimal(12, 2)
+  totalActual          Decimal @db.Decimal(12, 2)
+  profit               Decimal @db.Decimal(12, 2)
 
   @@index([saleId])
   @@index([productId])
+}
+
+// ==================== COUNTERPARTIES (SUPPLIERS & CLIENTS) ====================
+
+enum CounterpartyType {
+  SUPPLIER // Поставщик
+  CLIENT   // Клиент
+}
+
+model Counterparty {
+  id        String           @id @default(uuid())
+  name      String
+  phone     String?
+  note      String?
+  type      CounterpartyType
+  accountId String
+  account   Account          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  balance   Decimal          @db.Decimal(12, 2) @default(0) // Для SUPPLIER: + мы должны; Для CLIENT: + нам должны
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  transactions  CounterpartyTransaction[]
+  goodsReceipts GoodsReceipt[] @relation("GoodsReceiptSupplier")
+  sales         Sale[]         @relation("SaleClient")
+
+  @@index([accountId])
+  @@index([type])
+}
+
+enum CounterpartyTransactionType {
+  GOODS_RECEIVED // Товар получен от поставщика (увеличивает наш долг)
+  GOODS_SOLD     // Товар продан клиенту (увеличивает долг клиента)
+  PAYMENT_OUT    // Мы заплатили поставщику (уменьшает наш долг)
+  PAYMENT_IN     // Клиент заплатил нам (уменьшает долг клиента)
+}
+
+model CounterpartyTransaction {
+  id             String                      @id @default(uuid())
+  counterpartyId String
+  counterparty   Counterparty                @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
+  type           CounterpartyTransactionType
+  amount         Decimal                     @db.Decimal(12, 2)
+  description    String?
+  relatedId      String?
+  createdAt      DateTime                    @default(now())
+
+  @@index([counterpartyId])
+}
+
+// ==================== CASH REGISTER (КАССА) ====================
+
+model CashRegister {
+  id          String    @id @default(uuid())
+  shopId      String    @unique
+  shop        Warehouse @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  balance     Decimal   @db.Decimal(12, 2) @default(0) // Общий баланс (наличные)
+  cardBalance Decimal   @db.Decimal(12, 2) @default(0) // Баланс на карте
+  safeBalance Decimal   @db.Decimal(12, 2) @default(0) // Баланс в сейфе
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  transactions CashTransaction[]
+  expenses     Expense[]
+  payouts      Payout[]
+
+  @@index([shopId])
+}
+
+enum CashTransactionType {
+  SALE_INCOME          // Доход от продажи
+  SALE_INCOME_CARD     // Доход от продажи (карта)
+  PAYMENT_TO_SUPPLIER  // Оплата поставщику
+  PAYMENT_FROM_CLIENT  // Получение от клиента
+  EXPENSE              // Расход
+  ADJUSTMENT           // Корректировка
+  TRANSFER_TO_SAFE     // Перевод в сейф (из налички)
+  TRANSFER_FROM_SAFE   // Перевод из сейфа
+  CARD_TO_SAFE         // Перевод с карты в сейф
+  SAFE_TO_CARD         // Перевод из сейфа на карту
+  PAYOUT_CASH          // Выдача организатору (наличные)
+  PAYOUT_SAFE          // Выдача организатору (сейф)
+  PAYOUT_CARD          // Выдача организатору (карта)
+}
+
+model CashTransaction {
+  id             String              @id @default(uuid())
+  cashRegisterId String
+  cashRegister   CashRegister        @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  type           CashTransactionType
+  amount         Decimal             @db.Decimal(12, 2)
+  description    String?
+  counterpartyId String?
+  relatedId      String?
+  createdAt      DateTime            @default(now())
+
+  @@index([cashRegisterId])
+}
+
+// ==================== EXPENSES (РАСХОДЫ) ====================
+
+model Expense {
+  id             String       @id @default(uuid())
+  cashRegisterId String
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  category       String       // Категория: обед, грузчик, и т.д.
+  amount         Decimal      @db.Decimal(12, 2)
+  description    String?
+  paymentMethod  PaymentMethod @default(CASH) // Из какого источника (наличные/карта)
+  createdById    String?
+  createdAt      DateTime     @default(now())
+
+  @@index([cashRegisterId])
+  @@index([category])
+}
+
+// ==================== PAYOUTS (ВЫДАЧА ОРГАНИЗАТОРУ) ====================
+
+enum PayoutStatus {
+  PENDING    // Ожидает подтверждения
+  APPROVED   // Одобрено организатором
+  REJECTED   // Отклонено
+}
+
+model Payout {
+  id             String       @id @default(uuid())
+  number         String       @unique
+  cashRegisterId String
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  shopId         String
+  accountId      String
+  cashAmount     Decimal      @db.Decimal(12, 2) @default(0) // Сумма наличными
+  safeAmount     Decimal      @db.Decimal(12, 2) @default(0) // Сумма из сейфа
+  cardAmount     Decimal      @db.Decimal(12, 2) @default(0) // Сумма на карту
+  totalAmount    Decimal      @db.Decimal(12, 2)             // Общая сумма выдачи
+  status         PayoutStatus @default(PENDING)
+  note           String?
+  createdById    String?      // Кто создал выдачу
+  approvedById   String?      // Кто одобрил (организатор)
+  approvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([cashRegisterId])
+  @@index([shopId])
+  @@index([accountId])
+  @@index([status])
+  @@index([number])
 }
 
 // ==================== DEBTS & PAYMENTS ====================

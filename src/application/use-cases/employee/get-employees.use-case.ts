@@ -33,6 +33,9 @@ export class GetEmployeesUseCase {
             role: employee.role,
             canCreateShipment: employee.canCreateShipment,
             canReceiveShipment: employee.canReceiveShipment,
+            canSell: employee.canSell,
+            canAddProducts: employee.canAddProducts,
+            canManageCounterparties: employee.canManageCounterparties,
             isActive: employee.isActive,
             createdAt: employee.createdAt,
         }));

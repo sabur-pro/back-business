@@ -57,6 +57,7 @@ export class UserRepository implements IUserRepository {
                 accountId: data.accountId ?? null,
                 canCreateShipment: data.canCreateShipment ?? false,
                 canReceiveShipment: data.canReceiveShipment ?? false,
+                canSell: data.canSell ?? false,
                 isActive: data.isActive ?? true,
             },
         });
@@ -80,6 +81,9 @@ export class UserRepository implements IUserRepository {
                 ...(data.accountId !== undefined && { accountId: data.accountId }),
                 ...(data.canCreateShipment !== undefined && { canCreateShipment: data.canCreateShipment }),
                 ...(data.canReceiveShipment !== undefined && { canReceiveShipment: data.canReceiveShipment }),
+                ...(data.canSell !== undefined && { canSell: data.canSell }),
+                ...(data.canAddProducts !== undefined && { canAddProducts: data.canAddProducts }),
+                ...(data.canManageCounterparties !== undefined && { canManageCounterparties: data.canManageCounterparties }),
                 ...(data.isActive !== undefined && { isActive: data.isActive }),
             },
         });

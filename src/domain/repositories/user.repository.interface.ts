@@ -10,6 +10,9 @@ export interface CreateUserData {
     accountId?: string | null;
     canCreateShipment?: boolean;
     canReceiveShipment?: boolean;
+    canSell?: boolean;
+    canAddProducts?: boolean;
+    canManageCounterparties?: boolean;
     isActive?: boolean;
 }
 
@@ -23,6 +26,9 @@ export interface UpdateUserData {
     accountId?: string | null;
     canCreateShipment?: boolean;
     canReceiveShipment?: boolean;
+    canSell?: boolean;
+    canAddProducts?: boolean;
+    canManageCounterparties?: boolean;
     isActive?: boolean;
 }
 

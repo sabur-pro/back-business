@@ -40,6 +40,9 @@ export class UpdateEmployeePermissionsUseCase {
         const updated = await this.userRepository.update(employeeId, {
             canCreateShipment: dto.canCreateShipment,
             canReceiveShipment: dto.canReceiveShipment,
+            canSell: dto.canSell,
+            canAddProducts: dto.canAddProducts,
+            canManageCounterparties: dto.canManageCounterparties,
         });
 
         return {
@@ -52,6 +55,9 @@ export class UpdateEmployeePermissionsUseCase {
             role: updated.role,
             canCreateShipment: updated.canCreateShipment,
             canReceiveShipment: updated.canReceiveShipment,
+            canSell: updated.canSell,
+            canAddProducts: updated.canAddProducts,
+            canManageCounterparties: updated.canManageCounterparties,
             isActive: updated.isActive,
             createdAt: updated.createdAt,
         };

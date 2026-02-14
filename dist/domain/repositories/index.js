@@ -23,4 +23,8 @@ __exportStar(require("./point-member.repository.interface"), exports);
 __exportStar(require("./org-settings.repository.interface"), exports);
 __exportStar(require("./product.repository.interface"), exports);
 __exportStar(require("./shipment.repository.interface"), exports);
+__exportStar(require("./shop-employee.repository.interface"), exports);
+__exportStar(require("./sale.repository.interface"), exports);
+__exportStar(require("./counterparty.repository.interface"), exports);
+__exportStar(require("./cash-register.repository.interface"), exports);
 //# sourceMappingURL=index.js.map

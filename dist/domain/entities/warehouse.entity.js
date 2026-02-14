@@ -1,10 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WarehouseEntity = void 0;
+exports.WarehouseEntity = exports.WarehouseType = void 0;
+var WarehouseType;
+(function (WarehouseType) {
+    WarehouseType["WAREHOUSE"] = "WAREHOUSE";
+    WarehouseType["SHOP"] = "SHOP";
+})(WarehouseType || (exports.WarehouseType = WarehouseType = {}));
 class WarehouseEntity {
-    constructor(id, name, pointId, address, description, isActive, createdAt, updatedAt) {
+    constructor(id, name, type, pointId, address, description, isActive, createdAt, updatedAt) {
         this.id = id;
         this.name = name;
+        this.type = type;
         this.pointId = pointId;
         this.address = address;
         this.description = description;
@@ -13,7 +19,7 @@ class WarehouseEntity {
         this.updatedAt = updatedAt;
     }
     static create(props) {
-        return new WarehouseEntity(props.id, props.name, props.pointId, props.address ?? null, props.description ?? null, props.isActive ?? true, props.createdAt ?? new Date(), props.updatedAt ?? new Date());
+        return new WarehouseEntity(props.id, props.name, props.type ?? WarehouseType.WAREHOUSE, props.pointId, props.address ?? null, props.description ?? null, props.isActive ?? true, props.createdAt ?? new Date(), props.updatedAt ?? new Date());
     }
 }
 exports.WarehouseEntity = WarehouseEntity;

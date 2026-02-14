@@ -33,6 +33,7 @@ let CreateWarehouseUseCase = class CreateWarehouseUseCase {
         }
         return this.warehouseRepository.create({
             name: dto.name,
+            type: dto.type,
             pointId: dto.pointId,
             address: dto.address,
             description: dto.description,

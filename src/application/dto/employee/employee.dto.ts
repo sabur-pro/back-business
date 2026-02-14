@@ -65,6 +65,15 @@ export class EmployeeResponseDto {
     @ApiProperty({ description: 'Может принимать отправки' })
     canReceiveShipment: boolean;
 
+    @ApiProperty({ description: 'Может продавать товар' })
+    canSell: boolean;
+
+    @ApiProperty({ description: 'Может добавлять товары' })
+    canAddProducts: boolean;
+
+    @ApiProperty({ description: 'Может управлять контрагентами' })
+    canManageCounterparties: boolean;
+
     @ApiProperty({ description: 'Активен' })
     isActive: boolean;
 
@@ -82,6 +91,21 @@ export class UpdateEmployeePermissionsDto {
     @IsBoolean({ message: 'canReceiveShipment должен быть boolean' })
     @IsOptional()
     canReceiveShipment?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может продавать товар' })
+    @IsBoolean({ message: 'canSell должен быть boolean' })
+    @IsOptional()
+    canSell?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может добавлять товары' })
+    @IsBoolean({ message: 'canAddProducts должен быть boolean' })
+    @IsOptional()
+    canAddProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
+    @IsBoolean({ message: 'canManageCounterparties должен быть boolean' })
+    @IsOptional()
+    canManageCounterparties?: boolean;
 }
 
 export class PointAssignmentResponseDto {

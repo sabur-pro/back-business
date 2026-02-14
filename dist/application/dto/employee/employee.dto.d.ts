@@ -18,12 +18,18 @@ export declare class EmployeeResponseDto {
     role: string;
     canCreateShipment: boolean;
     canReceiveShipment: boolean;
+    canSell: boolean;
+    canAddProducts: boolean;
+    canManageCounterparties: boolean;
     isActive: boolean;
     createdAt: Date;
 }
 export declare class UpdateEmployeePermissionsDto {
     canCreateShipment?: boolean;
     canReceiveShipment?: boolean;
+    canSell?: boolean;
+    canAddProducts?: boolean;
+    canManageCounterparties?: boolean;
 }
 export declare class PointAssignmentResponseDto {
     id: string;

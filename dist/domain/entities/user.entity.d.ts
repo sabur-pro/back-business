@@ -13,10 +13,13 @@ export declare class UserEntity {
     readonly accountId: string | null;
     readonly canCreateShipment: boolean;
     readonly canReceiveShipment: boolean;
+    readonly canSell: boolean;
+    readonly canAddProducts: boolean;
+    readonly canManageCounterparties: boolean;
     readonly isActive: boolean;
     readonly createdAt: Date;
     readonly updatedAt: Date;
-    constructor(id: string, email: string, password: string, firstName: string, lastName: string, phone: string | null, role: UserRole, accountId: string | null, canCreateShipment: boolean, canReceiveShipment: boolean, isActive: boolean, createdAt: Date, updatedAt: Date);
+    constructor(id: string, email: string, password: string, firstName: string, lastName: string, phone: string | null, role: UserRole, accountId: string | null, canCreateShipment: boolean, canReceiveShipment: boolean, canSell: boolean, canAddProducts: boolean, canManageCounterparties: boolean, isActive: boolean, createdAt: Date, updatedAt: Date);
     get fullName(): string;
     get isOrganizer(): boolean;
     get isPointAdmin(): boolean;
@@ -31,6 +34,9 @@ export declare class UserEntity {
         accountId?: string | null;
         canCreateShipment?: boolean;
         canReceiveShipment?: boolean;
+        canSell?: boolean;
+        canAddProducts?: boolean;
+        canManageCounterparties?: boolean;
         isActive?: boolean;
         createdAt?: Date;
         updatedAt?: Date;
