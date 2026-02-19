@@ -4,6 +4,7 @@ import {
     PRODUCT_REPOSITORY,
     ProductSearchParams,
     PaginatedProducts,
+    ProductStats,
 } from '@domain/repositories/product.repository.interface';
 import {
     IPointRepository,
@@ -122,5 +123,47 @@ export class GetProductsUseCase {
         }
 
         return this.productRepository.findByAccountId(point.accountId);
+    }
+
+    async executeStats(userId: string): Promise<ProductStats> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new ForbiddenException('Пользователь не найден');
+        }
+
+        const accountIds: string[] = [];
+        if (user.role === UserRole.ORGANIZER) {
+            const accounts = await this.accountRepository.findByOwnerId(userId);
+            accountIds.push(...accounts.map((a) => a.id));
+        } else if (user.accountId) {
+            accountIds.push(user.accountId);
+        }
+
+        if (accountIds.length === 0) {
+            return { uniqueProducts: 0, totalBoxes: 0, totalPairs: 0 };
+        }
+
+        return this.productRepository.getStatsByAccountIds(accountIds);
+    }
+
+    async executeSearchAll(userId: string, params: ProductSearchParams): Promise<PaginatedProducts> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new ForbiddenException('Пользователь не найден');
+        }
+
+        const accountIds: string[] = [];
+        if (user.role === UserRole.ORGANIZER) {
+            const accounts = await this.accountRepository.findByOwnerId(userId);
+            accountIds.push(...accounts.map((a) => a.id));
+        } else if (user.accountId) {
+            accountIds.push(user.accountId);
+        }
+
+        if (accountIds.length === 0) {
+            return { items: [], total: 0, page: 1, limit: params.limit ?? 20, totalPages: 0 };
+        }
+
+        return this.productRepository.findAllByUserPaginated(accountIds, params);
     }
 }

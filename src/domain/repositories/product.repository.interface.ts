@@ -7,6 +7,12 @@ export interface ProductSearchParams {
     zeroBoxes?: boolean;
 }
 
+export interface ProductStats {
+    uniqueProducts: number;
+    totalBoxes: number;
+    totalPairs: number;
+}
+
 export interface PaginatedProducts {
     items: ProductEntity[];
     total: number;
@@ -64,6 +70,8 @@ export interface IProductRepository {
     findByAccountIdPaginated(accountId: string, params: ProductSearchParams): Promise<PaginatedProducts>;
     findByWarehouseIdPaginated(warehouseId: string, params: ProductSearchParams): Promise<PaginatedProducts>;
     findByPointIdPaginated(pointId: string, params: ProductSearchParams): Promise<PaginatedProducts>;
+    findAllByUserPaginated(accountIds: string[], params: ProductSearchParams): Promise<PaginatedProducts>;
+    getStatsByAccountIds(accountIds: string[]): Promise<ProductStats>;
     findBySkuAndAccountId(sku: string, accountId: string, warehouseId?: string | null): Promise<ProductEntity | null>;
     create(data: CreateProductData): Promise<ProductEntity>;
     createMany(data: CreateProductData[]): Promise<ProductEntity[]>;

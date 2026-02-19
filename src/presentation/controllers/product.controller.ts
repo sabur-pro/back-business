@@ -77,6 +77,29 @@ export class ProductController {
         return this.getProductsUseCase.execute(userId);
     }
 
+    @Get('stats')
+    @ApiOperation({ summary: 'Получить статистику товаров (уникальные, коробки, пары)' })
+    @ApiResponse({ status: 200, description: 'Статистика товаров' })
+    async getStats(
+        @CurrentUser('id') userId: string,
+    ) {
+        return this.getProductsUseCase.executeStats(userId);
+    }
+
+    @Get('search-all')
+    @ApiOperation({ summary: 'Поиск товаров по всем складам пользователя с пагинацией' })
+    @ApiResponse({ status: 200, description: 'Список товаров с пагинацией', type: PaginatedProductsResponseDto })
+    async searchAll(
+        @CurrentUser('id') userId: string,
+        @Query() query: ProductSearchQueryDto,
+    ): Promise<PaginatedProductsResponseDto> {
+        return this.getProductsUseCase.executeSearchAll(userId, {
+            page: query.page,
+            limit: query.limit,
+            search: query.search,
+        });
+    }
+
     @Get('search/:accountId')
     @ApiOperation({ summary: 'Поиск товаров с пагинацией' })
     @ApiResponse({ status: 200, description: 'Список товаров с пагинацией', type: PaginatedProductsResponseDto })

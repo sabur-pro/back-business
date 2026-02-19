@@ -6,6 +6,7 @@ import {
     UpdateProductData,
     ProductSearchParams,
     PaginatedProducts,
+    ProductStats,
 } from '@domain/repositories/product.repository.interface';
 import { ProductEntity } from '@domain/entities/product.entity';
 
@@ -317,5 +318,73 @@ export class ProductRepository implements IProductRepository {
             where: { id: { in: ids } },
         });
         return result.count;
+    }
+
+    async getStatsByAccountIds(accountIds: string[]): Promise<ProductStats> {
+        const where = { accountId: { in: accountIds } };
+
+        const [uniqueSkus, aggregation] = await Promise.all([
+            this.prisma.product.groupBy({
+                by: ['sku'],
+                where,
+            }),
+            this.prisma.product.aggregate({
+                where,
+                _sum: {
+                    boxCount: true,
+                    pairCount: true,
+                },
+            }),
+        ]);
+
+        return {
+            uniqueProducts: uniqueSkus.length,
+            totalBoxes: aggregation._sum.boxCount ?? 0,
+            totalPairs: aggregation._sum.pairCount ?? 0,
+        };
+    }
+
+    async findAllByUserPaginated(
+        accountIds: string[],
+        params: ProductSearchParams,
+    ): Promise<PaginatedProducts> {
+        const page = params.page ?? 1;
+        const limit = params.limit ?? 20;
+        const skip = (page - 1) * limit;
+        const search = params.search?.trim();
+
+        let where: any = { accountId: { in: accountIds } };
+
+        if (search) {
+            const tokens = search.split(/\s+/).filter(Boolean);
+            const conditions = tokens.map((token) => {
+                return {
+                    OR: [
+                        { sku: { contains: token, mode: 'insensitive' as const } },
+                        { sizeRange: { contains: token, mode: 'insensitive' as const } },
+                        { barcode: { contains: token, mode: 'insensitive' as const } },
+                    ],
+                };
+            });
+            where = { ...where, AND: conditions };
+        }
+
+        const [items, total] = await Promise.all([
+            this.prisma.product.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.product.count({ where }),
+        ]);
+
+        return {
+            items: items.map((p) => this.toEntity(p)),
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 }
