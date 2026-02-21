@@ -217,6 +217,8 @@ export class SaleRepository implements ISaleRepository {
             totalRecommended: sale.totalRecommended,
             totalActual: sale.totalActual,
             paidAmount: sale.paidAmount,
+            cashAmount: sale.cashAmount,
+            cardAmount: sale.cardAmount,
             paymentMethod: sale.paymentMethod as PaymentMethod,
             profit: sale.profit,
             status: sale.status as SaleStatus,

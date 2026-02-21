@@ -18,6 +18,7 @@ import {
     PayFromCashRegisterDto,
     ReceiveToCashRegisterDto,
     TransferToSafeDto,
+    TransferFundsDto,
     CreateExpenseDto,
     CreatePayoutDto,
     CashTransactionSearchQueryDto,
@@ -88,7 +89,7 @@ export class CashRegisterController {
         return this.payFromCashRegisterUseCase.receiveFromClient(dto);
     }
 
-    // ==================== SAFE ====================
+    // ==================== TRANSFERS ====================
 
     @Post('transfer-to-safe')
     @ApiOperation({ summary: 'Перевести деньги в сейф (из наличных или карты)' })
@@ -97,6 +98,15 @@ export class CashRegisterController {
         @Body() dto: TransferToSafeDto,
     ): Promise<CashRegisterResponseDto> {
         return this.transferToSafeUseCase.execute(dto);
+    }
+
+    @Post('transfer')
+    @ApiOperation({ summary: 'Перевод между счетами (наличные, карта, сейф)' })
+    @ApiResponse({ status: 200, description: 'Перевод выполнен', type: CashRegisterResponseDto })
+    async transferFunds(
+        @Body() dto: TransferFundsDto,
+    ): Promise<CashRegisterResponseDto> {
+        return this.transferToSafeUseCase.transferFunds(dto);
     }
 
     // ==================== EXPENSES ====================

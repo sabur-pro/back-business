@@ -190,13 +190,35 @@ export class CreateSaleUseCase {
 
         const totalProfit = Math.round((totalActual - totalRub) * 100) / 100;
 
-        // 7. Generate sale number
+        // 7. Resolve payment amounts (split support)
+        let cashAmount = dto.cashAmount ?? 0;
+        let cardAmount = dto.cardAmount ?? 0;
+
+        // Legacy fallback: if cashAmount/cardAmount not provided, use paidAmount + paymentMethod
+        if (dto.cashAmount === undefined && dto.cardAmount === undefined && dto.paidAmount !== undefined) {
+            const pm = (dto.paymentMethod as PaymentMethod) ?? PaymentMethod.CASH;
+            if (pm === PaymentMethod.CARD) {
+                cardAmount = dto.paidAmount;
+            } else {
+                cashAmount = dto.paidAmount;
+            }
+        }
+
+        const paidAmount = cashAmount + cardAmount;
+        const paymentMethod = cardAmount > 0 && cashAmount === 0
+            ? PaymentMethod.CARD
+            : PaymentMethod.CASH;
+
+        // Validate: debt requires a client
+        const roundedTotalActualCheck = Math.round(totalActual * 100) / 100;
+        if (paidAmount < roundedTotalActualCheck && !dto.clientId) {
+            throw new BadRequestException('Для оформления долга необходимо указать клиента');
+        }
+
+        // 8. Generate sale number
         const number = await this.saleRepository.generateNumber();
 
-        const paidAmount = dto.paidAmount ?? 0;
-        const paymentMethod = (dto.paymentMethod as PaymentMethod) ?? PaymentMethod.CASH;
-
-        // 8. Create sale and subtract stock in a transaction
+        // 9. Create sale and subtract stock in a transaction
         const result = await this.prisma.$transaction(async (tx) => {
             // Subtract products from shop
             for (const item of dto.items) {
@@ -235,6 +257,8 @@ export class CreateSaleUseCase {
                     accountId,
                     clientId: dto.clientId ?? null,
                     paymentMethod: paymentMethod as any,
+                    cashAmount,
+                    cardAmount,
                     totalYuan: Math.round(totalYuan * 100) / 100,
                     totalRub: Math.round(totalRub * 100) / 100,
                     totalRecommended: Math.round(totalRecommended * 100) / 100,
@@ -275,7 +299,7 @@ export class CreateSaleUseCase {
             return sale;
         });
 
-        // 9. Update client counterparty balance if client specified
+        // 10. Update client counterparty balance if client specified
         const roundedTotalActual = Math.round(totalActual * 100) / 100;
         if (dto.clientId) {
             // Record goods sold to client
@@ -301,25 +325,31 @@ export class CreateSaleUseCase {
             }
         }
 
-        // 10. Update cash register with sale income (paidAmount goes to cash or card balance)
-        if (paidAmount > 0) {
-            const register = await this.cashRegisterRepository.findOrCreateByShopId(dto.shopId);
-            const txType = paymentMethod === PaymentMethod.CARD
-                ? CashTransactionType.SALE_INCOME_CARD
-                : CashTransactionType.SALE_INCOME;
+        // 11. Update cash register — separate transactions for cash and card
+        const register = await this.cashRegisterRepository.findOrCreateByShopId(dto.shopId);
+
+        if (cashAmount > 0) {
             await this.cashRegisterRepository.createTransaction({
                 cashRegisterId: register.id,
-                type: txType,
-                amount: paidAmount,
-                description: `Продажа ${number} (${paymentMethod === PaymentMethod.CARD ? 'карта' : 'наличные'})`,
+                type: CashTransactionType.SALE_INCOME,
+                amount: cashAmount,
+                description: `Продажа ${number} (наличные)`,
                 counterpartyId: dto.clientId ?? null,
                 relatedId: result.id,
             });
-            if (paymentMethod === PaymentMethod.CARD) {
-                await this.cashRegisterRepository.updateCardBalance(register.id, paidAmount);
-            } else {
-                await this.cashRegisterRepository.updateBalance(register.id, paidAmount);
-            }
+            await this.cashRegisterRepository.updateBalance(register.id, cashAmount);
+        }
+
+        if (cardAmount > 0) {
+            await this.cashRegisterRepository.createTransaction({
+                cashRegisterId: register.id,
+                type: CashTransactionType.SALE_INCOME_CARD,
+                amount: cardAmount,
+                description: `Продажа ${number} (карта)`,
+                counterpartyId: dto.clientId ?? null,
+                relatedId: result.id,
+            });
+            await this.cashRegisterRepository.updateCardBalance(register.id, cardAmount);
         }
 
         return this.saleRepository.findById(result.id) as Promise<SaleEntity>;

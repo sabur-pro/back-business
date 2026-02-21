@@ -63,6 +63,20 @@ export class CreateSaleDto {
     @IsOptional()
     paymentMethod?: string;
 
+    @ApiPropertyOptional({ description: 'Сумма оплаты наличными', example: 3000 })
+    @IsNumber({}, { message: 'Сумма наличными должна быть числом' })
+    @Min(0, { message: 'Сумма не может быть отрицательной' })
+    @IsOptional()
+    @Type(() => Number)
+    cashAmount?: number;
+
+    @ApiPropertyOptional({ description: 'Сумма оплаты картой', example: 2000 })
+    @IsNumber({}, { message: 'Сумма картой должна быть числом' })
+    @Min(0, { message: 'Сумма не может быть отрицательной' })
+    @IsOptional()
+    @Type(() => Number)
+    cardAmount?: number;
+
     @ApiPropertyOptional({ description: 'Примечание' })
     @IsString({ message: 'Примечание должно быть строкой' })
     @IsOptional()
@@ -187,6 +201,12 @@ export class SaleResponseDto {
 
     @ApiProperty({ description: 'Тип оплаты' })
     paymentMethod: string;
+
+    @ApiProperty({ description: 'Оплата наличными' })
+    cashAmount: number;
+
+    @ApiProperty({ description: 'Оплата картой' })
+    cardAmount: number;
 
     @ApiProperty({ description: 'Прибыль' })
     profit: number;

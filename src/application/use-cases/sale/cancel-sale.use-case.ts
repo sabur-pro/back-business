@@ -103,25 +103,32 @@ export class CancelSaleUseCase {
             }
         }
 
-        // Reverse cash register balance if there was payment
-        if (sale.paidAmount > 0) {
-            const register = await this.cashRegisterRepository.findByShopId(sale.shopId);
-            if (register) {
-                const txType = sale.paymentMethod === PaymentMethod.CARD
-                    ? CashTransactionType.SALE_INCOME_CARD
-                    : CashTransactionType.SALE_INCOME;
+        // Reverse cash register balance — reverse cash and card separately
+        const register = await this.cashRegisterRepository.findByShopId(sale.shopId);
+        if (register) {
+            const saleCashAmount = Number(sale.cashAmount ?? 0);
+            const saleCardAmount = Number(sale.cardAmount ?? 0);
+
+            if (saleCashAmount > 0) {
                 await this.cashRegisterRepository.createTransaction({
                     cashRegisterId: register.id,
-                    type: txType,
-                    amount: -sale.paidAmount,
-                    description: `Отмена продажи ${sale.number}`,
+                    type: CashTransactionType.SALE_INCOME,
+                    amount: -saleCashAmount,
+                    description: `Отмена продажи ${sale.number} (наличные)`,
                     relatedId: sale.id,
                 });
-                if (sale.paymentMethod === PaymentMethod.CARD) {
-                    await this.cashRegisterRepository.updateCardBalance(register.id, -sale.paidAmount);
-                } else {
-                    await this.cashRegisterRepository.updateBalance(register.id, -sale.paidAmount);
-                }
+                await this.cashRegisterRepository.updateBalance(register.id, -saleCashAmount);
+            }
+
+            if (saleCardAmount > 0) {
+                await this.cashRegisterRepository.createTransaction({
+                    cashRegisterId: register.id,
+                    type: CashTransactionType.SALE_INCOME_CARD,
+                    amount: -saleCardAmount,
+                    description: `Отмена продажи ${sale.number} (карта)`,
+                    relatedId: sale.id,
+                });
+                await this.cashRegisterRepository.updateCardBalance(register.id, -saleCardAmount);
             }
         }
 

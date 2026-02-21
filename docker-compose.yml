@@ -10,9 +10,9 @@ services:
     env_file:
       - .env
     environment:
-      - VIRTUAL_HOST=api.retailio.ru
+      - VIRTUAL_HOST=api.four-brothers.ru
       - VIRTUAL_PORT=3006
-      - LETSENCRYPT_HOST=api.retailio.ru
+      - LETSENCRYPT_HOST=api.four-brothers.ru
       - LETSENCRYPT_EMAIL=meoutic@gmail.com
       - PORT=3006
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
@@ -64,9 +64,9 @@ services:
     expose:
       - "80"
     environment:
-      - VIRTUAL_HOST=studio.retailio.ru
+      - VIRTUAL_HOST=studio.four-brothers.ru
       - VIRTUAL_PORT=80
-      - LETSENCRYPT_HOST=studio.retailio.ru
+      - LETSENCRYPT_HOST=studio.four-brothers.ru
       - LETSENCRYPT_EMAIL=meoutic@gmail.com
     depends_on:
       - prisma-studio

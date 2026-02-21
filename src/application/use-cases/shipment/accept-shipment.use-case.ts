@@ -141,6 +141,18 @@ export class AcceptShipmentUseCase {
                         },
                     });
                 } else {
+                    // Look up the source product to carry over recommendedSalePrice
+                    let sourceRecommendedPrice = 0;
+                    if (item.productId) {
+                        const sourceProduct = await tx.product.findUnique({
+                            where: { id: item.productId },
+                            select: { recommendedSalePrice: true },
+                        });
+                        if (sourceProduct) {
+                            sourceRecommendedPrice = Number(sourceProduct.recommendedSalePrice);
+                        }
+                    }
+
                     await tx.product.create({
                         data: {
                             sku: item.sku,
@@ -152,8 +164,8 @@ export class AcceptShipmentUseCase {
                             priceRub: item.priceRub,
                             totalYuan: item.totalYuan,
                             totalRub: item.totalRub,
-                            recommendedSalePrice: 0,
-                            totalRecommendedSale: 0,
+                            recommendedSalePrice: sourceRecommendedPrice,
+                            totalRecommendedSale: sourceRecommendedPrice * item.pairCount,
                             actualSalePrice: 0,
                             totalActualSale: 0,
                             accountId: shipment.toAccountId,
