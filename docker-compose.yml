@@ -16,6 +16,8 @@ services:
       - LETSENCRYPT_EMAIL=meoutic@gmail.com
       - PORT=3006
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
+    volumes:
+      - ./photos:/app/photos
     depends_on:
       postgres:
         condition: service_healthy
