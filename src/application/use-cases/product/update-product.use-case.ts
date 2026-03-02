@@ -54,7 +54,7 @@ export class UpdateProductUseCase {
             }
         }
 
-        return this.productRepository.update(productId, {
+        const updatedProduct = await this.productRepository.update(productId, {
             sku: dto.sku,
             photoOriginal: dto.photoOriginal,
             photo: dto.photo,
@@ -68,6 +68,19 @@ export class UpdateProductUseCase {
             barcode: dto.barcode,
             isActive: dto.isActive,
         });
+
+        const hasPriceChanges = dto.priceYuan !== undefined || dto.priceRub !== undefined || dto.totalYuan !== undefined || dto.totalRub !== undefined;
+        if (hasPriceChanges) {
+            const currentSku = dto.sku ?? product.sku;
+            await this.productRepository.updatePricesBySku(currentSku, product.accountId, {
+                priceYuan: dto.priceYuan,
+                priceRub: dto.priceRub,
+                totalYuan: dto.totalYuan,
+                totalRub: dto.totalRub,
+            });
+        }
+
+        return updatedProduct;
     }
 
     private async checkPermissions(

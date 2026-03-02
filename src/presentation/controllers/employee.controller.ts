@@ -21,6 +21,7 @@ import {
     CreateEmployeeDto,
     AssignPointDto,
     UpdateEmployeePermissionsDto,
+    UpdateEmployeeDataDto,
     EmployeeResponseDto,
     PointAssignmentResponseDto,
 } from '@application/dto/employee';
@@ -32,11 +33,11 @@ import {
     GetPointEmployeesUseCase,
     UnassignPointUseCase,
     UpdateEmployeePermissionsUseCase,
+    UpdateEmployeeDataUseCase,
 } from '@application/use-cases/employee';
 
 @ApiTags('Сотрудники')
 @ApiBearerAuth()
-@Roles(UserRole.ORGANIZER)
 @Controller('employees')
 export class EmployeeController {
     constructor(
@@ -47,9 +48,11 @@ export class EmployeeController {
         private readonly getPointEmployeesUseCase: GetPointEmployeesUseCase,
         private readonly unassignPointUseCase: UnassignPointUseCase,
         private readonly updateEmployeePermissionsUseCase: UpdateEmployeePermissionsUseCase,
+        private readonly updateEmployeeDataUseCase: UpdateEmployeeDataUseCase,
     ) { }
 
     @Post()
+    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Создать сотрудника' })
     @ApiResponse({ status: 201, description: 'Сотрудник создан', type: EmployeeResponseDto })
     async create(
@@ -60,6 +63,7 @@ export class EmployeeController {
     }
 
     @Get()
+    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Получить список сотрудников' })
     @ApiResponse({ status: 200, description: 'Список сотрудников', type: [EmployeeResponseDto] })
     async getAll(@CurrentUser('id') userId: string): Promise<EmployeeResponseDto[]> {
@@ -67,6 +71,7 @@ export class EmployeeController {
     }
 
     @Get('point/:pointId')
+    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Получить сотрудников точки' })
     @ApiResponse({ status: 200, description: 'Список сотрудников точки', type: [EmployeeResponseDto] })
     async getByPoint(
@@ -77,6 +82,7 @@ export class EmployeeController {
     }
 
     @Post(':employeeId/assign-point')
+    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Назначить сотрудника на точку' })
     @ApiResponse({ status: 201, description: 'Назначение создано', type: PointAssignmentResponseDto })
     async assignPoint(
@@ -88,6 +94,7 @@ export class EmployeeController {
     }
 
     @Delete(':employeeId/unassign-point')
+    @Roles(UserRole.ORGANIZER)
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Снять сотрудника с точки' })
     @ApiResponse({ status: 204, description: 'Назначение удалено' })
@@ -100,6 +107,7 @@ export class EmployeeController {
     }
 
     @Put(':employeeId/permissions')
+    @Roles(UserRole.ORGANIZER)
     @ApiOperation({ summary: 'Обновить разрешения сотрудника' })
     @ApiResponse({ status: 200, description: 'Разрешения обновлены', type: EmployeeResponseDto })
     async updatePermissions(
@@ -110,7 +118,19 @@ export class EmployeeController {
         return this.updateEmployeePermissionsUseCase.execute(userId, employeeId, dto);
     }
 
+    @Put(':employeeId')
+    @ApiOperation({ summary: 'Обновить данные сотрудника' })
+    @ApiResponse({ status: 200, description: 'Данные обновлены', type: EmployeeResponseDto })
+    async updateData(
+        @CurrentUser('id') userId: string,
+        @Param('employeeId') employeeId: string,
+        @Body() dto: UpdateEmployeeDataDto,
+    ): Promise<EmployeeResponseDto> {
+        return this.updateEmployeeDataUseCase.execute(userId, employeeId, dto);
+    }
+
     @Delete(':employeeId')
+    @Roles(UserRole.ORGANIZER)
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({ summary: 'Удалить сотрудника' })
     @ApiResponse({ status: 204, description: 'Сотрудник удалён' })

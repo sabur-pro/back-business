@@ -307,6 +307,23 @@ export class ProductRepository implements IProductRepository {
         return this.toEntity(product);
     }
 
+    async updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number; totalYuan?: number; totalRub?: number }): Promise<void> {
+        if (Object.keys(data).length === 0) return;
+
+        await this.prisma.product.updateMany({
+            where: {
+                sku,
+                accountId,
+            },
+            data: {
+                ...(data.priceYuan !== undefined && { priceYuan: data.priceYuan }),
+                ...(data.priceRub !== undefined && { priceRub: data.priceRub }),
+                ...(data.totalYuan !== undefined && { totalYuan: data.totalYuan }),
+                ...(data.totalRub !== undefined && { totalRub: data.totalRub }),
+            },
+        });
+    }
+
     async delete(id: string): Promise<void> {
         await this.prisma.product.delete({
             where: { id },

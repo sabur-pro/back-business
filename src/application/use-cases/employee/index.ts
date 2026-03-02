@@ -5,3 +5,4 @@ export * from './delete-employee.use-case';
 export * from './get-point-employees.use-case';
 export * from './unassign-point.use-case';
 export * from './update-employee-permissions.use-case';
+export * from './update-employee-data.use-case';

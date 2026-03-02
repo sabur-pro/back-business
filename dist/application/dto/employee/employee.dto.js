@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PointAssignmentResponseDto = exports.UpdateEmployeePermissionsDto = exports.EmployeeResponseDto = exports.AssignPointDto = exports.CreateEmployeeDto = void 0;
+exports.UpdateEmployeeDataDto = exports.PointAssignmentResponseDto = exports.UpdateEmployeePermissionsDto = exports.EmployeeResponseDto = exports.AssignPointDto = exports.CreateEmployeeDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class CreateEmployeeDto {
@@ -175,4 +175,40 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Дата назначения' }),
     __metadata("design:type", Date)
 ], PointAssignmentResponseDto.prototype, "createdAt", void 0);
+class UpdateEmployeeDataDto {
+}
+exports.UpdateEmployeeDataDto = UpdateEmployeeDataDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Имя', example: 'Иван' }),
+    (0, class_validator_1.IsString)({ message: 'Имя должно быть строкой' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(50),
+    __metadata("design:type", String)
+], UpdateEmployeeDataDto.prototype, "firstName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Фамилия', example: 'Петров' }),
+    (0, class_validator_1.IsString)({ message: 'Фамилия должна быть строкой' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(50),
+    __metadata("design:type", String)
+], UpdateEmployeeDataDto.prototype, "lastName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Email', example: 'employee@example.com' }),
+    (0, class_validator_1.IsEmail)({}, { message: 'Некорректный email' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateEmployeeDataDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Новый пароль', example: 'newpassword123' }),
+    (0, class_validator_1.IsString)({ message: 'Пароль должен быть строкой' }),
+    (0, class_validator_1.MinLength)(6, { message: 'Пароль минимум 6 символов' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateEmployeeDataDto.prototype, "password", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Телефон', example: '+7 999 123-45-67' }),
+    (0, class_validator_1.IsString)({ message: 'Телефон должен быть строкой' }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateEmployeeDataDto.prototype, "phone", void 0);
 //# sourceMappingURL=employee.dto.js.map

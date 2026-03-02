@@ -76,6 +76,7 @@ export interface IProductRepository {
     create(data: CreateProductData): Promise<ProductEntity>;
     createMany(data: CreateProductData[]): Promise<ProductEntity[]>;
     update(id: string, data: UpdateProductData): Promise<ProductEntity>;
+    updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number; totalYuan?: number; totalRub?: number }): Promise<void>;
     delete(id: string): Promise<void>;
     deleteMany(ids: string[]): Promise<number>;
 }

@@ -21,4 +21,5 @@ __exportStar(require("./delete-employee.use-case"), exports);
 __exportStar(require("./get-point-employees.use-case"), exports);
 __exportStar(require("./unassign-point.use-case"), exports);
 __exportStar(require("./update-employee-permissions.use-case"), exports);
+__exportStar(require("./update-employee-data.use-case"), exports);
 //# sourceMappingURL=index.js.map

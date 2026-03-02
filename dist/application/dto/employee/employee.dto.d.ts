@@ -39,3 +39,10 @@ export declare class PointAssignmentResponseDto {
     role: string;
     createdAt: Date;
 }
+export declare class UpdateEmployeeDataDto {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+}
