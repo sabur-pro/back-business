@@ -338,12 +338,17 @@ export class ProductRepository implements IProductRepository {
     }
 
     async getStatsByAccountIds(accountIds: string[]): Promise<ProductStats> {
-        const where = { accountId: { in: accountIds } };
+        const where = { accountId: { in: accountIds }, isActive: true };
 
         const [uniqueSkus, aggregation] = await Promise.all([
             this.prisma.product.groupBy({
                 by: ['sku'],
                 where,
+                _max: {
+                    priceYuan: true,
+                    priceRub: true,
+                    recommendedSalePrice: true,
+                },
             }),
             this.prisma.product.aggregate({
                 where,
@@ -354,10 +359,26 @@ export class ProductRepository implements IProductRepository {
             }),
         ]);
 
+        let totalYuan = 0;
+        let totalCostRub = 0;
+        let totalRecommendedSale = 0;
+
+        for (const skuGroup of uniqueSkus) {
+            totalYuan += Number(skuGroup._max.priceYuan ?? 0);
+            totalCostRub += Number(skuGroup._max.priceRub ?? 0);
+            totalRecommendedSale += Number(skuGroup._max.recommendedSalePrice ?? 0);
+        }
+
+        const differenceRubRecommended = totalRecommendedSale - totalCostRub;
+
         return {
             uniqueProducts: uniqueSkus.length,
-            totalBoxes: aggregation._sum.boxCount ?? 0,
-            totalPairs: aggregation._sum.pairCount ?? 0,
+            totalBoxes: Number(aggregation._sum.boxCount ?? 0),
+            totalPairs: Number(aggregation._sum.pairCount ?? 0),
+            totalYuan,
+            totalCostRub,
+            totalRecommendedSale,
+            differenceRubRecommended,
         };
     }
 

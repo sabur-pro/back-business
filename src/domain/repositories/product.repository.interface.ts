@@ -11,6 +11,10 @@ export interface ProductStats {
     uniqueProducts: number;
     totalBoxes: number;
     totalPairs: number;
+    totalYuan: number;
+    totalCostRub: number;
+    totalRecommendedSale: number;
+    differenceRubRecommended: number;
 }
 
 export interface PaginatedProducts {

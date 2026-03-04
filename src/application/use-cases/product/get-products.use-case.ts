@@ -140,7 +140,15 @@ export class GetProductsUseCase {
         }
 
         if (accountIds.length === 0) {
-            return { uniqueProducts: 0, totalBoxes: 0, totalPairs: 0 };
+            return {
+                uniqueProducts: 0,
+                totalBoxes: 0,
+                totalPairs: 0,
+                totalYuan: 0,
+                totalCostRub: 0,
+                totalRecommendedSale: 0,
+                differenceRubRecommended: 0
+            };
         }
 
         return this.productRepository.getStatsByAccountIds(accountIds);

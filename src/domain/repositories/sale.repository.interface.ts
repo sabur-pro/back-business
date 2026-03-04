@@ -50,6 +50,12 @@ export interface PaginatedSales {
     totalPages: number;
 }
 
+export interface SalesSummary {
+    totalActualSales: number;
+    salesCount: number;
+    netProfit: number;
+}
+
 /**
  * Sale Repository Interface
  */
@@ -61,6 +67,7 @@ export interface ISaleRepository {
     create(data: CreateSaleData): Promise<SaleEntity>;
     updateStatus(id: string, status: string): Promise<SaleEntity>;
     generateNumber(): Promise<string>;
+    getSummaryByAccountIds(accountIds: string[], from: Date, to: Date): Promise<SalesSummary>;
 }
 
 export const SALE_REPOSITORY = Symbol('ISaleRepository');

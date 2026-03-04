@@ -5,6 +5,7 @@ import {
     CreateSaleData,
     SaleSearchParams,
     PaginatedSales,
+    SalesSummary,
 } from '@domain/repositories/sale.repository.interface';
 import { SaleEntity, SaleStatus, PaymentMethod } from '@domain/entities/sale.entity';
 import { SaleItemEntity } from '@domain/entities/sale-item.entity';
@@ -186,16 +187,42 @@ export class SaleRepository implements ISaleRepository {
     async updateStatus(id: string, status: string): Promise<SaleEntity> {
         const sale = await this.prisma.sale.update({
             where: { id },
-            data: { status: status as any },
-            include: {
-                items: true,
-                shop: { select: { id: true, name: true } },
-                point: { select: { id: true, name: true } },
-                client: { select: { id: true, name: true } },
+            data: {
+                status: status as any,
             },
+            include: { items: true },
         });
 
         return this.mapToEntity(sale);
+    }
+
+    async getSummaryByAccountIds(accountIds: string[], from: Date, to: Date): Promise<SalesSummary> {
+        const result = await this.prisma.sale.aggregate({
+            where: {
+                accountId: { in: accountIds },
+                status: 'COMPLETED',
+                createdAt: {
+                    gte: from,
+                    lte: to
+                }
+            },
+            _sum: {
+                totalActual: true,
+                totalRub: true,
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        const totalActualSales = Number(result._sum.totalActual ?? 0);
+        const totalCostRub = Number(result._sum.totalRub ?? 0);
+
+        return {
+            totalActualSales,
+            salesCount: result._count.id,
+            netProfit: totalActualSales - totalCostRub,
+        };
     }
 
     async generateNumber(): Promise<string> {
