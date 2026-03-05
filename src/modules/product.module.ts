@@ -9,6 +9,7 @@ import {
     AccountRepository,
     WarehouseRepository,
     CounterpartyRepository,
+    AuditLogRepository,
 } from '@infrastructure/database/repositories';
 import {
     PRODUCT_REPOSITORY,
@@ -32,11 +33,15 @@ import {
     COUNTERPARTY_REPOSITORY,
 } from '@domain/repositories/counterparty.repository.interface';
 import {
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
+import {
     CreateProductUseCase,
     GetProductsUseCase,
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    RestoreProductUseCase,
 } from '@application/use-cases/product';
 
 @Module({
@@ -72,12 +77,17 @@ import {
             provide: COUNTERPARTY_REPOSITORY,
             useClass: CounterpartyRepository,
         },
+        {
+            provide: AUDIT_LOG_REPOSITORY,
+            useClass: AuditLogRepository,
+        },
         // Use Cases
         CreateProductUseCase,
         GetProductsUseCase,
         UpdateProductUseCase,
         DeleteProductUseCase,
         BatchCreateProductsUseCase,
+        RestoreProductUseCase,
     ],
     exports: [PRODUCT_REPOSITORY],
 })

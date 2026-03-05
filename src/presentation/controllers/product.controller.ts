@@ -32,6 +32,7 @@ import {
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    RestoreProductUseCase,
 } from '@application/use-cases/product';
 
 @ApiTags('Товары')
@@ -44,6 +45,7 @@ export class ProductController {
         private readonly updateProductUseCase: UpdateProductUseCase,
         private readonly deleteProductUseCase: DeleteProductUseCase,
         private readonly batchCreateProductsUseCase: BatchCreateProductsUseCase,
+        private readonly restoreProductUseCase: RestoreProductUseCase,
     ) { }
 
     @Post()
@@ -168,6 +170,18 @@ export class ProductController {
         @Body() dto: UpdateProductDto,
     ): Promise<ProductResponseDto> {
         return this.updateProductUseCase.execute(userId, id, dto);
+    }
+
+    @Put(':id/restore')
+    @ApiOperation({ summary: 'Восстановить удалённый товар' })
+    @ApiResponse({ status: 200, description: 'Товар восстановлен', type: ProductResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    @ApiResponse({ status: 404, description: 'Удалённый товар не найден' })
+    async restore(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ): Promise<ProductResponseDto> {
+        return this.restoreProductUseCase.execute(userId, id);
     }
 
     @Delete('batch')

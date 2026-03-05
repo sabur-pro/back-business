@@ -11,3 +11,4 @@ export * from './shop-employee.repository.interface';
 export * from './sale.repository.interface';
 export * from './counterparty.repository.interface';
 export * from './cash-register.repository.interface';
+export * from './audit-log.repository.interface';

@@ -15,6 +15,11 @@ import {
     IPointMemberRepository,
     POINT_MEMBER_REPOSITORY,
 } from '@domain/repositories/point-member.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { UserRole } from '@domain/entities/user.entity';
 
 @Injectable()
@@ -28,6 +33,8 @@ export class DeleteProductUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
     ) { }
 
     async execute(userId: string, productId: string): Promise<void> {
@@ -44,7 +51,29 @@ export class DeleteProductUseCase {
         // Check permissions
         await this.checkPermissions(userId, user.role, product.accountId);
 
+        // Soft-delete the product
         await this.productRepository.delete(productId);
+
+        // Record audit log
+        await this.auditLogRepository.create({
+            action: AuditAction.PRODUCT_DELETED,
+            entityType: 'PRODUCT',
+            entityId: productId,
+            userId,
+            accountId: product.accountId,
+            oldData: {
+                sku: product.sku,
+                photo: product.photo,
+                sizeRange: product.sizeRange,
+                boxCount: product.boxCount,
+                pairCount: product.pairCount,
+                priceYuan: product.priceYuan,
+                priceRub: product.priceRub,
+                totalYuan: product.totalYuan,
+                totalRub: product.totalRub,
+                warehouseId: product.warehouseId,
+            },
+        });
     }
 
     async executeMany(userId: string, productIds: string[]): Promise<{ deleted: number }> {
@@ -58,6 +87,7 @@ export class DeleteProductUseCase {
         }
 
         // Validate all products exist and belong to the same account
+        const products = [];
         const accountIds = new Set<string>();
         for (const id of productIds) {
             const product = await this.productRepository.findById(id);
@@ -65,6 +95,7 @@ export class DeleteProductUseCase {
                 throw new NotFoundException(`Товар с ID "${id}" не найден`);
             }
             accountIds.add(product.accountId);
+            products.push(product);
         }
 
         // Check permissions for each account
@@ -73,6 +104,24 @@ export class DeleteProductUseCase {
         }
 
         const deleted = await this.productRepository.deleteMany(productIds);
+
+        // Record audit logs for each deleted product
+        const auditLogs = products.map((product) => ({
+            action: AuditAction.PRODUCT_DELETED,
+            entityType: 'PRODUCT',
+            entityId: product.id,
+            userId,
+            accountId: product.accountId,
+            oldData: {
+                sku: product.sku,
+                boxCount: product.boxCount,
+                pairCount: product.pairCount,
+                priceYuan: product.priceYuan,
+                priceRub: product.priceRub,
+            },
+        }));
+        await this.auditLogRepository.createMany(auditLogs);
+
         return { deleted };
     }
 

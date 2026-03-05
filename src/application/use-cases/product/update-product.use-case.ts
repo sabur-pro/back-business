@@ -15,7 +15,12 @@ import {
     IPointMemberRepository,
     POINT_MEMBER_REPOSITORY,
 } from '@domain/repositories/point-member.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { ProductEntity } from '@domain/entities/product.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { UserRole } from '@domain/entities/user.entity';
 import { UpdateProductDto } from '@application/dto/product';
 
@@ -30,6 +35,8 @@ export class UpdateProductUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
     ) { }
 
     async execute(userId: string, productId: string, dto: UpdateProductDto): Promise<ProductEntity> {
@@ -51,6 +58,22 @@ export class UpdateProductUseCase {
             const existingProduct = await this.productRepository.findBySkuAndAccountId(dto.sku, product.accountId, product.warehouseId);
             if (existingProduct) {
                 throw new ConflictException(`Товар с артикулом "${dto.sku}" уже существует на данном складе`);
+            }
+        }
+
+        // Capture old data before update
+        const oldData: Record<string, any> = {};
+        const newData: Record<string, any> = {};
+
+        const fieldsToTrack = [
+            'sku', 'photoOriginal', 'photo', 'sizeRange', 'boxCount', 'pairCount',
+            'priceYuan', 'priceRub', 'totalYuan', 'totalRub', 'barcode', 'isActive',
+        ] as const;
+
+        for (const field of fieldsToTrack) {
+            if ((dto as any)[field] !== undefined && (dto as any)[field] !== (product as any)[field]) {
+                oldData[field] = (product as any)[field];
+                newData[field] = (dto as any)[field];
             }
         }
 
@@ -77,6 +100,19 @@ export class UpdateProductUseCase {
                 priceRub: dto.priceRub,
                 totalYuan: dto.totalYuan,
                 totalRub: dto.totalRub,
+            });
+        }
+
+        // Record audit log if there are actual changes
+        if (Object.keys(oldData).length > 0) {
+            await this.auditLogRepository.create({
+                action: AuditAction.PRODUCT_UPDATED,
+                entityType: 'PRODUCT',
+                entityId: productId,
+                userId,
+                accountId: product.accountId,
+                oldData,
+                newData,
             });
         }
 

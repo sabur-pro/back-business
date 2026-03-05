@@ -23,11 +23,16 @@ import {
     ICounterpartyRepository,
     COUNTERPARTY_REPOSITORY,
 } from '@domain/repositories/counterparty.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { ProductEntity } from '@domain/entities/product.entity';
 import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { UserRole } from '@domain/entities/user.entity';
 import { CounterpartyType } from '@domain/entities/counterparty.entity';
 import { CounterpartyTransactionType } from '@domain/entities/counterparty-transaction.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { BatchCreateProductsDto, BatchCreateProductsResponseDto } from '@application/dto/product';
 
 @Injectable()
@@ -45,6 +50,8 @@ export class BatchCreateProductsUseCase {
         private readonly warehouseRepository: IWarehouseRepository,
         @Inject(COUNTERPARTY_REPOSITORY)
         private readonly counterpartyRepository: ICounterpartyRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
     ) { }
 
     private normalizeSkuPrefix(char: string): string {
@@ -181,6 +188,38 @@ export class BatchCreateProductsUseCase {
                 await this.counterpartyRepository.updateBalance(dto.supplierId, -paidAmount);
             }
         }
+
+        // Record audit logs for batch creation
+        const auditLogs = products.map((product) => ({
+            action: AuditAction.PRODUCT_BATCH_CREATED,
+            entityType: 'PRODUCT',
+            entityId: product.id,
+            userId,
+            accountId,
+            newData: {
+                sku: product.sku,
+                photoOriginal: product.photoOriginal,
+                photo: product.photo,
+                sizeRange: product.sizeRange,
+                boxCount: product.boxCount,
+                pairCount: product.pairCount,
+                priceYuan: product.priceYuan,
+                priceRub: product.priceRub,
+                totalYuan: product.totalYuan,
+                totalRub: product.totalRub,
+                recommendedSalePrice: product.recommendedSalePrice,
+                totalRecommendedSale: product.totalRecommendedSale,
+                barcode: product.barcode,
+                warehouseId: product.warehouseId,
+            },
+            metadata: {
+                pointId: dto.pointId,
+                pointName: point.name,
+                supplierId: dto.supplierId ?? null,
+                batchSize: products.length,
+            },
+        }));
+        await this.auditLogRepository.createMany(auditLogs);
 
         return {
             products,

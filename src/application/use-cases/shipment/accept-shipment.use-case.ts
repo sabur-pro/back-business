@@ -21,9 +21,14 @@ import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { UserRole } from '@domain/entities/user.entity';
 import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { ShipmentEntity, ShipmentStatus } from '@domain/entities/shipment.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { AcceptShipmentDto } from '@application/dto/shipment';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
@@ -38,6 +43,8 @@ export class AcceptShipmentUseCase {
         private readonly warehouseRepository: IWarehouseRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: IUserRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -83,8 +90,6 @@ export class AcceptShipmentUseCase {
         await this.checkReceiverAccess(userId, user.role, shipment.toPointId, shipment.toAccountId);
 
         // 5. Resolve receiver warehouses
-        // If the destination point has a SHOP, route all products directly to the shop.
-        // Otherwise, fall back to SKU-prefix-based routing ("Мужской" / "Женский").
         const shops = await this.warehouseRepository.findByPointIdAndType(shipment.toPointId, WarehouseType.SHOP);
         const shopWarehouse = shops.length > 0 ? shops[0] : null;
 
@@ -185,6 +190,21 @@ export class AcceptShipmentUseCase {
                     confirmedAt: now,
                 },
             });
+        });
+
+        // Record audit log
+        await this.auditLogRepository.create({
+            action: AuditAction.SHIPMENT_ACCEPTED,
+            entityType: 'SHIPMENT',
+            entityId: shipmentId,
+            userId,
+            accountId: shipment.toAccountId,
+            newData: {
+                number: shipment.number,
+                itemCount: shipment.items.length,
+                totalYuan: shipment.totalYuan,
+                totalRub: shipment.totalRub,
+            },
         });
 
         // Return updated shipment

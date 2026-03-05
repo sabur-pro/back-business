@@ -38,6 +38,7 @@ model User {
   pointAssignments PointMember[]
   shopAssignments  ShopEmployee[]
   refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
 
   @@index([accountId])
 }
@@ -198,6 +199,7 @@ model Product {
   warehouseId          String?
   warehouse            Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
   isActive             Boolean    @default(true)
+  deletedAt            DateTime?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
 
@@ -629,4 +631,36 @@ enum PaymentStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+// ==================== AUDIT LOG ====================
+
+enum AuditAction {
+  PRODUCT_CREATED
+  PRODUCT_BATCH_CREATED
+  PRODUCT_UPDATED
+  PRODUCT_DELETED
+  PRODUCT_RESTORED
+  SHIPMENT_CREATED
+  SHIPMENT_ACCEPTED
+  SHIPMENT_CANCELLED
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  action     AuditAction
+  entityType String // "PRODUCT", "SHIPMENT"
+  entityId   String // ID сущности
+  userId     String // Кто сделал
+  user       User        @relation(fields: [userId], references: [id])
+  accountId  String // В рамках какой организации
+  oldData    Json? // Старые данные (для UPDATE/DELETE)
+  newData    Json? // Новые данные (для CREATE/UPDATE)
+  metadata   Json? // Доп. информация
+  createdAt  DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([accountId])
+  @@index([createdAt])
 }

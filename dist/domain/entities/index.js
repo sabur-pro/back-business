@@ -31,4 +31,5 @@ __exportStar(require("./counterparty.entity"), exports);
 __exportStar(require("./counterparty-transaction.entity"), exports);
 __exportStar(require("./cash-register.entity"), exports);
 __exportStar(require("./cash-transaction.entity"), exports);
+__exportStar(require("./audit-log.entity"), exports);
 //# sourceMappingURL=index.js.map

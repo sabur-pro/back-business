@@ -15,3 +15,4 @@ export * from './counterparty.entity';
 export * from './counterparty-transaction.entity';
 export * from './cash-register.entity';
 export * from './cash-transaction.entity';
+export * from './audit-log.entity';

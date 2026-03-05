@@ -25,4 +25,5 @@ __exportStar(require("./shop.controller"), exports);
 __exportStar(require("./sale.controller"), exports);
 __exportStar(require("./counterparty.controller"), exports);
 __exportStar(require("./cash-register.controller"), exports);
+__exportStar(require("./audit-log.controller"), exports);
 //# sourceMappingURL=index.js.map

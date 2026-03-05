@@ -17,8 +17,13 @@ import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { UserRole } from '@domain/entities/user.entity';
 import { ShipmentEntity, ShipmentStatus } from '@domain/entities/shipment.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
 @Injectable()
@@ -30,6 +35,8 @@ export class CancelShipmentUseCase {
         private readonly pointRepository: IPointRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: IUserRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -92,6 +99,22 @@ export class CancelShipmentUseCase {
                 where: { id: shipmentId },
                 data: { status: 'CANCELLED' },
             });
+        });
+
+        // Record audit log
+        await this.auditLogRepository.create({
+            action: AuditAction.SHIPMENT_CANCELLED,
+            entityType: 'SHIPMENT',
+            entityId: shipmentId,
+            userId,
+            accountId: shipment.fromAccountId,
+            oldData: {
+                number: shipment.number,
+                status: shipment.status,
+                totalYuan: shipment.totalYuan,
+                totalRub: shipment.totalRub,
+                itemCount: shipment.items.length,
+            },
         });
 
         const updated = await this.shipmentRepository.findById(shipmentId);

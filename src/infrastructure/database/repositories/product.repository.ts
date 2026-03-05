@@ -41,8 +41,8 @@ export class ProductRepository implements IProductRepository {
     }
 
     async findById(id: string): Promise<ProductEntity | null> {
-        const product = await this.prisma.product.findUnique({
-            where: { id },
+        const product = await this.prisma.product.findFirst({
+            where: { id, deletedAt: null },
         });
 
         if (!product) return null;
@@ -52,7 +52,7 @@ export class ProductRepository implements IProductRepository {
 
     async findByAccountId(accountId: string): Promise<ProductEntity[]> {
         const products = await this.prisma.product.findMany({
-            where: { accountId },
+            where: { accountId, deletedAt: null },
             orderBy: { createdAt: 'desc' },
         });
 
@@ -68,7 +68,7 @@ export class ProductRepository implements IProductRepository {
         const skip = (page - 1) * limit;
         const search = params.search?.trim();
 
-        let where: any = { accountId };
+        let where: any = { accountId, deletedAt: null };
 
         if (search) {
             // Build fuzzy-like search: split into tokens and match each across fields
@@ -113,7 +113,7 @@ export class ProductRepository implements IProductRepository {
         const skip = (page - 1) * limit;
         const search = params.search?.trim();
 
-        let where: any = { warehouseId };
+        let where: any = { warehouseId, deletedAt: null };
 
         if (params.zeroBoxes) {
             where.boxCount = 0;
@@ -168,7 +168,7 @@ export class ProductRepository implements IProductRepository {
         });
         const warehouseIds = warehouses.map((w) => w.id);
 
-        let where: any = { warehouseId: { in: warehouseIds } };
+        let where: any = { warehouseId: { in: warehouseIds }, deletedAt: null };
 
         if (params.zeroBoxes) {
             where.boxCount = 0;
@@ -208,7 +208,7 @@ export class ProductRepository implements IProductRepository {
     }
 
     async findBySkuAndAccountId(sku: string, accountId: string, warehouseId?: string | null): Promise<ProductEntity | null> {
-        const where: any = { sku, accountId };
+        const where: any = { sku, accountId, deletedAt: null };
         if (warehouseId !== undefined) {
             where.warehouseId = warehouseId;
         }
@@ -325,60 +325,75 @@ export class ProductRepository implements IProductRepository {
     }
 
     async delete(id: string): Promise<void> {
-        await this.prisma.product.delete({
+        await this.prisma.product.update({
             where: { id },
+            data: { deletedAt: new Date() },
         });
     }
 
     async deleteMany(ids: string[]): Promise<number> {
-        const result = await this.prisma.product.deleteMany({
+        const result = await this.prisma.product.updateMany({
             where: { id: { in: ids } },
+            data: { deletedAt: new Date() },
         });
         return result.count;
     }
 
-    async getStatsByAccountIds(accountIds: string[]): Promise<ProductStats> {
-        const where = { accountId: { in: accountIds }, isActive: true };
+    async restore(id: string): Promise<ProductEntity> {
+        const product = await this.prisma.product.update({
+            where: { id },
+            data: { deletedAt: null },
+        });
+        return this.toEntity(product);
+    }
 
-        const [uniqueSkus, aggregation] = await Promise.all([
-            this.prisma.product.groupBy({
-                by: ['sku'],
-                where,
-                _max: {
-                    priceYuan: true,
-                    priceRub: true,
-                    recommendedSalePrice: true,
-                },
-            }),
+    async getStatsByAccountIds(accountIds: string[]): Promise<ProductStats> {
+        const where = { accountId: { in: accountIds }, isActive: true, deletedAt: null as any };
+
+        const [productCount, aggregation, inTransitAgg] = await Promise.all([
+            this.prisma.product.count({ where }),
             this.prisma.product.aggregate({
                 where,
                 _sum: {
                     boxCount: true,
                     pairCount: true,
+                    totalYuan: true,
+                    totalRub: true,
+                    totalRecommendedSale: true,
+                },
+            }),
+            // In-transit: products in Transfers with status PENDING or SENT
+            this.prisma.transferItem.aggregate({
+                where: {
+                    transfer: {
+                        status: { in: ['PENDING', 'SENT'] },
+                        fromAccountId: { in: accountIds },
+                    },
+                },
+                _count: { id: true },
+                _sum: {
+                    totalYuan: true,
+                    totalRub: true,
                 },
             }),
         ]);
 
-        let totalYuan = 0;
-        let totalCostRub = 0;
-        let totalRecommendedSale = 0;
-
-        for (const skuGroup of uniqueSkus) {
-            totalYuan += Number(skuGroup._max.priceYuan ?? 0);
-            totalCostRub += Number(skuGroup._max.priceRub ?? 0);
-            totalRecommendedSale += Number(skuGroup._max.recommendedSalePrice ?? 0);
-        }
-
+        const totalYuan = Number(aggregation._sum.totalYuan ?? 0);
+        const totalCostRub = Number(aggregation._sum.totalRub ?? 0);
+        const totalRecommendedSale = Number(aggregation._sum.totalRecommendedSale ?? 0);
         const differenceRubRecommended = totalRecommendedSale - totalCostRub;
 
         return {
-            uniqueProducts: uniqueSkus.length,
+            totalProducts: productCount,
             totalBoxes: Number(aggregation._sum.boxCount ?? 0),
             totalPairs: Number(aggregation._sum.pairCount ?? 0),
             totalYuan,
             totalCostRub,
             totalRecommendedSale,
             differenceRubRecommended,
+            inTransitProducts: inTransitAgg._count.id,
+            inTransitYuan: Number(inTransitAgg._sum.totalYuan ?? 0),
+            inTransitRub: Number(inTransitAgg._sum.totalRub ?? 0),
         };
     }
 
@@ -391,7 +406,7 @@ export class ProductRepository implements IProductRepository {
         const skip = (page - 1) * limit;
         const search = params.search?.trim();
 
-        let where: any = { accountId: { in: accountIds } };
+        let where: any = { accountId: { in: accountIds }, deletedAt: null };
 
         if (search) {
             const tokens = search.split(/\s+/).filter(Boolean);

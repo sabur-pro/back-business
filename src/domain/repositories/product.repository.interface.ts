@@ -8,13 +8,16 @@ export interface ProductSearchParams {
 }
 
 export interface ProductStats {
-    uniqueProducts: number;
+    totalProducts: number;
     totalBoxes: number;
     totalPairs: number;
     totalYuan: number;
     totalCostRub: number;
     totalRecommendedSale: number;
     differenceRubRecommended: number;
+    inTransitProducts: number;
+    inTransitYuan: number;
+    inTransitRub: number;
 }
 
 export interface PaginatedProducts {

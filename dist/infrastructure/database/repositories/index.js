@@ -27,4 +27,5 @@ __exportStar(require("./shop-employee.repository"), exports);
 __exportStar(require("./sale.repository"), exports);
 __exportStar(require("./counterparty.repository"), exports);
 __exportStar(require("./cash-register.repository"), exports);
+__exportStar(require("./audit-log.repository"), exports);
 //# sourceMappingURL=index.js.map
