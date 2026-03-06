@@ -350,8 +350,9 @@ export class ProductRepository implements IProductRepository {
     async getStatsByAccountIds(accountIds: string[]): Promise<ProductStats> {
         const where = { accountId: { in: accountIds }, isActive: true, deletedAt: null as any };
 
-        const [productCount, aggregation, inTransitAgg] = await Promise.all([
+        const [productCount, uniqueSkuGroups, aggregation, inTransitAgg, warehouses] = await Promise.all([
             this.prisma.product.count({ where }),
+            this.prisma.product.groupBy({ by: ['sku'], where }),
             this.prisma.product.aggregate({
                 where,
                 _sum: {
@@ -362,7 +363,6 @@ export class ProductRepository implements IProductRepository {
                     totalRecommendedSale: true,
                 },
             }),
-            // In-transit: products in Transfers with status PENDING or SENT
             this.prisma.transferItem.aggregate({
                 where: {
                     transfer: {
@@ -371,11 +371,68 @@ export class ProductRepository implements IProductRepository {
                     },
                 },
                 _count: { id: true },
-                _sum: {
-                    totalYuan: true,
-                    totalRub: true,
-                },
+                _sum: { totalYuan: true, totalRub: true },
             }),
+            // Get all warehouses for categorization
+            this.prisma.warehouse.findMany({
+                where: { point: { accountId: { in: accountIds } } },
+                select: { id: true, pointId: true, type: true },
+            }),
+        ]);
+
+        // Categorize points by warehouse types
+        const pointTypes = new Map<string, Set<string>>();
+        for (const wh of warehouses) {
+            if (!pointTypes.has(wh.pointId)) pointTypes.set(wh.pointId, new Set());
+            pointTypes.get(wh.pointId)!.add(wh.type);
+        }
+
+        // Categorize warehouse IDs
+        const warehouseOnlyWhIds: string[] = [];
+        const shopOnlyWhIds: string[] = [];
+        const mixedWhIds: string[] = [];
+
+        for (const wh of warehouses) {
+            const types = pointTypes.get(wh.pointId)!;
+            const hasWarehouse = types.has('WAREHOUSE');
+            const hasShop = types.has('SHOP');
+            if (hasWarehouse && hasShop) {
+                mixedWhIds.push(wh.id);
+            } else if (hasShop) {
+                shopOnlyWhIds.push(wh.id);
+            } else {
+                warehouseOnlyWhIds.push(wh.id);
+            }
+        }
+
+        // Aggregate per category
+        const aggregateCategory = async (whIds: string[]) => {
+            if (whIds.length === 0) return null;
+            const catWhere = { ...where, warehouseId: { in: whIds } };
+            const [count, agg] = await Promise.all([
+                this.prisma.product.count({ where: catWhere }),
+                this.prisma.product.aggregate({
+                    where: catWhere,
+                    _sum: { totalYuan: true, totalRub: true, totalRecommendedSale: true },
+                }),
+            ]);
+            if (count === 0) return null;
+            const catYuan = Number(agg._sum.totalYuan ?? 0);
+            const catRub = Number(agg._sum.totalRub ?? 0);
+            const catRec = Number(agg._sum.totalRecommendedSale ?? 0);
+            return {
+                totalProducts: count,
+                totalYuan: catYuan,
+                totalCostRub: catRub,
+                totalRecommendedSale: catRec,
+                differenceRubRecommended: catRec - catRub,
+            };
+        };
+
+        const [warehouseOnlyCat, shopOnlyCat, mixedCat] = await Promise.all([
+            aggregateCategory(warehouseOnlyWhIds),
+            aggregateCategory(shopOnlyWhIds),
+            aggregateCategory(mixedWhIds),
         ]);
 
         const totalYuan = Number(aggregation._sum.totalYuan ?? 0);
@@ -385,6 +442,7 @@ export class ProductRepository implements IProductRepository {
 
         return {
             totalProducts: productCount,
+            uniqueProducts: uniqueSkuGroups.length,
             totalBoxes: Number(aggregation._sum.boxCount ?? 0),
             totalPairs: Number(aggregation._sum.pairCount ?? 0),
             totalYuan,
@@ -394,6 +452,11 @@ export class ProductRepository implements IProductRepository {
             inTransitProducts: inTransitAgg._count.id,
             inTransitYuan: Number(inTransitAgg._sum.totalYuan ?? 0),
             inTransitRub: Number(inTransitAgg._sum.totalRub ?? 0),
+            byCategory: {
+                warehouseOnly: warehouseOnlyCat,
+                shopOnly: shopOnlyCat,
+                mixed: mixedCat,
+            },
         };
     }
 

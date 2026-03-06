@@ -7,8 +7,17 @@ export interface ProductSearchParams {
     zeroBoxes?: boolean;
 }
 
+export interface CategoryStats {
+    totalProducts: number;
+    totalYuan: number;
+    totalCostRub: number;
+    totalRecommendedSale: number;
+    differenceRubRecommended: number;
+}
+
 export interface ProductStats {
     totalProducts: number;
+    uniqueProducts: number;
     totalBoxes: number;
     totalPairs: number;
     totalYuan: number;
@@ -18,6 +27,11 @@ export interface ProductStats {
     inTransitProducts: number;
     inTransitYuan: number;
     inTransitRub: number;
+    byCategory: {
+        warehouseOnly: CategoryStats | null;
+        shopOnly: CategoryStats | null;
+        mixed: CategoryStats | null;
+    };
 }
 
 export interface PaginatedProducts {

@@ -142,6 +142,7 @@ export class GetProductsUseCase {
         if (accountIds.length === 0) {
             return {
                 totalProducts: 0,
+                uniqueProducts: 0,
                 totalBoxes: 0,
                 totalPairs: 0,
                 totalYuan: 0,
@@ -151,6 +152,11 @@ export class GetProductsUseCase {
                 inTransitProducts: 0,
                 inTransitYuan: 0,
                 inTransitRub: 0,
+                byCategory: {
+                    warehouseOnly: null,
+                    shopOnly: null,
+                    mixed: null,
+                },
             };
         }
 
