@@ -458,4 +458,10 @@ export class PaginatedProductsResponseDto {
 
     @ApiProperty({ description: 'Всего страниц', example: 5 })
     totalPages: number;
+
+    @ApiProperty({ description: 'Общее количество пар (по всем страницам)', example: 500 })
+    totalPairs: number;
+
+    @ApiProperty({ description: 'Общее количество коробок (по всем страницам)', example: 60 })
+    totalBoxes: number;
 }

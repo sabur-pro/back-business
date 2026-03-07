@@ -84,4 +84,13 @@ export class WarehouseResponseDto {
 
     @ApiProperty({ description: 'Дата обновления' })
     updatedAt: Date;
+
+    @ApiPropertyOptional({ description: 'Количество товаров' })
+    productCount?: number;
+
+    @ApiPropertyOptional({ description: 'Общее количество пар' })
+    totalPairs?: number;
+
+    @ApiPropertyOptional({ description: 'Общее количество коробок' })
+    totalBoxes?: number;
 }

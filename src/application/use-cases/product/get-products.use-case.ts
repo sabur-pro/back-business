@@ -178,7 +178,7 @@ export class GetProductsUseCase {
         }
 
         if (accountIds.length === 0) {
-            return { items: [], total: 0, page: 1, limit: params.limit ?? 20, totalPages: 0 };
+            return { items: [], total: 0, page: 1, limit: params.limit ?? 20, totalPages: 0, totalPairs: 0, totalBoxes: 0 };
         }
 
         return this.productRepository.findAllByUserPaginated(accountIds, params);

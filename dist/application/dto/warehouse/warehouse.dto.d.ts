@@ -21,4 +21,7 @@ export declare class WarehouseResponseDto {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    productCount?: number;
+    totalPairs?: number;
+    totalBoxes?: number;
 }

@@ -92,14 +92,12 @@ export class UpdateProductUseCase {
             isActive: dto.isActive,
         });
 
-        const hasPriceChanges = dto.priceYuan !== undefined || dto.priceRub !== undefined || dto.totalYuan !== undefined || dto.totalRub !== undefined;
+        const hasPriceChanges = dto.priceYuan !== undefined || dto.priceRub !== undefined;
         if (hasPriceChanges) {
             const currentSku = dto.sku ?? product.sku;
             await this.productRepository.updatePricesBySku(currentSku, product.accountId, {
                 priceYuan: dto.priceYuan,
                 priceRub: dto.priceRub,
-                totalYuan: dto.totalYuan,
-                totalRub: dto.totalRub,
             });
         }
 

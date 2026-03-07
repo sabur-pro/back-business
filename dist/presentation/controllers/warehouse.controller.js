@@ -29,10 +29,22 @@ let WarehouseController = class WarehouseController {
         return this.createWarehouseUseCase.execute(userId, dto);
     }
     async getAll(userId) {
-        return this.getWarehousesUseCase.execute(userId);
+        const results = await this.getWarehousesUseCase.executeWithStats(userId);
+        return results.map(r => ({
+            ...r.warehouse,
+            productCount: r.productCount,
+            totalPairs: r.totalPairs,
+            totalBoxes: r.totalBoxes,
+        }));
     }
     async getByPoint(pointId) {
-        return this.getWarehousesUseCase.executeByPointId(pointId);
+        const results = await this.getWarehousesUseCase.executeByPointIdWithStats(pointId);
+        return results.map(r => ({
+            ...r.warehouse,
+            productCount: r.productCount,
+            totalPairs: r.totalPairs,
+            totalBoxes: r.totalBoxes,
+        }));
     }
     async getById(id) {
         const warehouse = await this.getWarehousesUseCase.executeById(id);

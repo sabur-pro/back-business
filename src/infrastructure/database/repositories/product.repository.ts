@@ -85,7 +85,7 @@ export class ProductRepository implements IProductRepository {
             where = { ...where, AND: conditions };
         }
 
-        const [items, total] = await Promise.all([
+        const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
                 orderBy: { createdAt: 'desc' },
@@ -93,6 +93,10 @@ export class ProductRepository implements IProductRepository {
                 take: limit,
             }),
             this.prisma.product.count({ where }),
+            this.prisma.product.aggregate({
+                where,
+                _sum: { pairCount: true, boxCount: true },
+            }),
         ]);
 
         return {
@@ -101,6 +105,8 @@ export class ProductRepository implements IProductRepository {
             page,
             limit,
             totalPages: Math.ceil(total / limit),
+            totalPairs: Number(agg._sum.pairCount ?? 0),
+            totalBoxes: Number(agg._sum.boxCount ?? 0),
         };
     }
 
@@ -133,7 +139,7 @@ export class ProductRepository implements IProductRepository {
             where = { ...where, AND: conditions };
         }
 
-        const [items, total] = await Promise.all([
+        const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
                 orderBy: { createdAt: 'desc' },
@@ -141,6 +147,10 @@ export class ProductRepository implements IProductRepository {
                 take: limit,
             }),
             this.prisma.product.count({ where }),
+            this.prisma.product.aggregate({
+                where,
+                _sum: { pairCount: true, boxCount: true },
+            }),
         ]);
 
         return {
@@ -149,6 +159,8 @@ export class ProductRepository implements IProductRepository {
             page,
             limit,
             totalPages: Math.ceil(total / limit),
+            totalPairs: Number(agg._sum.pairCount ?? 0),
+            totalBoxes: Number(agg._sum.boxCount ?? 0),
         };
     }
 
@@ -188,7 +200,7 @@ export class ProductRepository implements IProductRepository {
             where = { ...where, AND: conditions };
         }
 
-        const [items, total] = await Promise.all([
+        const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
                 orderBy: { createdAt: 'desc' },
@@ -196,6 +208,10 @@ export class ProductRepository implements IProductRepository {
                 take: limit,
             }),
             this.prisma.product.count({ where }),
+            this.prisma.product.aggregate({
+                where,
+                _sum: { pairCount: true, boxCount: true },
+            }),
         ]);
 
         return {
@@ -204,6 +220,8 @@ export class ProductRepository implements IProductRepository {
             page,
             limit,
             totalPages: Math.ceil(total / limit),
+            totalPairs: Number(agg._sum.pairCount ?? 0),
+            totalBoxes: Number(agg._sum.boxCount ?? 0),
         };
     }
 
@@ -307,21 +325,39 @@ export class ProductRepository implements IProductRepository {
         return this.toEntity(product);
     }
 
-    async updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number; totalYuan?: number; totalRub?: number }): Promise<void> {
-        if (Object.keys(data).length === 0) return;
+    async updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number }): Promise<void> {
+        if (data.priceYuan === undefined && data.priceRub === undefined) return;
 
-        await this.prisma.product.updateMany({
-            where: {
-                sku,
-                accountId,
-            },
-            data: {
-                ...(data.priceYuan !== undefined && { priceYuan: data.priceYuan }),
-                ...(data.priceRub !== undefined && { priceRub: data.priceRub }),
-                ...(data.totalYuan !== undefined && { totalYuan: data.totalYuan }),
-                ...(data.totalRub !== undefined && { totalRub: data.totalRub }),
-            },
+        // 1. Update unit prices for all products with this SKU
+        const priceUpdate: any = {};
+        if (data.priceYuan !== undefined) priceUpdate.priceYuan = data.priceYuan;
+        if (data.priceRub !== undefined) priceUpdate.priceRub = data.priceRub;
+
+        if (Object.keys(priceUpdate).length > 0) {
+            await this.prisma.product.updateMany({
+                where: { sku, accountId },
+                data: priceUpdate,
+            });
+        }
+
+        // 2. Recalculate totals for each product individually based on its pairCount
+        const products = await this.prisma.product.findMany({
+            where: { sku, accountId },
+            select: { id: true, pairCount: true, priceYuan: true, priceRub: true, recommendedSalePrice: true, actualSalePrice: true },
         });
+
+        for (const product of products) {
+            const pairCount = product.pairCount;
+            await this.prisma.product.update({
+                where: { id: product.id },
+                data: {
+                    totalYuan: Math.round(Number(product.priceYuan) * pairCount * 100) / 100,
+                    totalRub: Math.round(Number(product.priceRub) * pairCount * 100) / 100,
+                    totalRecommendedSale: Math.round(Number(product.recommendedSalePrice) * pairCount * 100) / 100,
+                    totalActualSale: Math.round(Number(product.actualSalePrice) * pairCount * 100) / 100,
+                },
+            });
+        }
     }
 
     async delete(id: string): Promise<void> {
@@ -485,7 +521,7 @@ export class ProductRepository implements IProductRepository {
             where = { ...where, AND: conditions };
         }
 
-        const [items, total] = await Promise.all([
+        const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
                 orderBy: { createdAt: 'desc' },
@@ -493,6 +529,10 @@ export class ProductRepository implements IProductRepository {
                 take: limit,
             }),
             this.prisma.product.count({ where }),
+            this.prisma.product.aggregate({
+                where,
+                _sum: { pairCount: true, boxCount: true },
+            }),
         ]);
 
         return {
@@ -501,6 +541,8 @@ export class ProductRepository implements IProductRepository {
             page,
             limit,
             totalPages: Math.ceil(total / limit),
+            totalPairs: Number(agg._sum.pairCount ?? 0),
+            totalBoxes: Number(agg._sum.boxCount ?? 0),
         };
     }
 }

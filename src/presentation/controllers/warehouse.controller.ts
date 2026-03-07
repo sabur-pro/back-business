@@ -54,14 +54,26 @@ export class WarehouseController {
     @ApiOperation({ summary: 'Получить все склады пользователя' })
     @ApiResponse({ status: 200, description: 'Список складов', type: [WarehouseResponseDto] })
     async getAll(@CurrentUser('id') userId: string): Promise<WarehouseResponseDto[]> {
-        return this.getWarehousesUseCase.execute(userId);
+        const results = await this.getWarehousesUseCase.executeWithStats(userId);
+        return results.map(r => ({
+            ...r.warehouse,
+            productCount: r.productCount,
+            totalPairs: r.totalPairs,
+            totalBoxes: r.totalBoxes,
+        } as WarehouseResponseDto));
     }
 
     @Get('point/:pointId')
     @ApiOperation({ summary: 'Получить склады по точке' })
     @ApiResponse({ status: 200, description: 'Список складов', type: [WarehouseResponseDto] })
     async getByPoint(@Param('pointId') pointId: string): Promise<WarehouseResponseDto[]> {
-        return this.getWarehousesUseCase.executeByPointId(pointId);
+        const results = await this.getWarehousesUseCase.executeByPointIdWithStats(pointId);
+        return results.map(r => ({
+            ...r.warehouse,
+            productCount: r.productCount,
+            totalPairs: r.totalPairs,
+            totalBoxes: r.totalBoxes,
+        } as WarehouseResponseDto));
     }
 
     @Get(':id')

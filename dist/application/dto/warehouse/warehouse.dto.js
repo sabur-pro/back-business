@@ -118,4 +118,16 @@ __decorate([
     (0, swagger_1.ApiProperty)({ description: 'Дата обновления' }),
     __metadata("design:type", Date)
 ], WarehouseResponseDto.prototype, "updatedAt", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Количество товаров' }),
+    __metadata("design:type", Number)
+], WarehouseResponseDto.prototype, "productCount", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Общее количество пар' }),
+    __metadata("design:type", Number)
+], WarehouseResponseDto.prototype, "totalPairs", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Общее количество коробок' }),
+    __metadata("design:type", Number)
+], WarehouseResponseDto.prototype, "totalBoxes", void 0);
 //# sourceMappingURL=warehouse.dto.js.map
