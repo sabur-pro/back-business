@@ -33,6 +33,7 @@ import {
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
     RestoreProductUseCase,
+    TrackProductUseCase,
 } from '@application/use-cases/product';
 
 @ApiTags('Товары')
@@ -46,6 +47,7 @@ export class ProductController {
         private readonly deleteProductUseCase: DeleteProductUseCase,
         private readonly batchCreateProductsUseCase: BatchCreateProductsUseCase,
         private readonly restoreProductUseCase: RestoreProductUseCase,
+        private readonly trackProductUseCase: TrackProductUseCase,
     ) { }
 
     @Post()
@@ -100,6 +102,16 @@ export class ProductController {
             limit: query.limit,
             search: query.search,
         });
+    }
+
+    @Get('track/:sku')
+    @ApiOperation({ summary: 'Отслеживание движения товара по артикулу' })
+    @ApiResponse({ status: 200, description: 'Полная история движения товара' })
+    async trackBySku(
+        @CurrentUser('id') userId: string,
+        @Param('sku') sku: string,
+    ) {
+        return this.trackProductUseCase.execute(userId, sku);
     }
 
     @Get('search/:accountId')

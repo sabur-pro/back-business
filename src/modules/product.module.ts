@@ -42,6 +42,7 @@ import {
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
     RestoreProductUseCase,
+    TrackProductUseCase,
 } from '@application/use-cases/product';
 
 @Module({
@@ -88,6 +89,7 @@ import {
         DeleteProductUseCase,
         BatchCreateProductsUseCase,
         RestoreProductUseCase,
+        TrackProductUseCase,
     ],
     exports: [PRODUCT_REPOSITORY],
 })
