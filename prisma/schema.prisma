@@ -208,7 +208,6 @@ model Product {
   transferItems     TransferItem[]
   saleItems         SaleItem[]
 
-  @@unique([sku, accountId, warehouseId])
   @@index([sku])
   @@index([barcode])
   @@index([accountId])

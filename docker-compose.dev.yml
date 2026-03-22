@@ -1,0 +1,66 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mybusiness-api-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./photos:/app/photos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mybusiness-internal
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: mybusiness-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-warehouse_db}
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mybusiness-internal
+
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: prisma-studio/Dockerfile
+    container_name: mybusiness-prisma-studio
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mybusiness-internal
+
+volumes:
+  postgres_data:
+
+networks:
+  mybusiness-internal:
+    driver: bridge
