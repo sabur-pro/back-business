@@ -325,7 +325,7 @@ export class TrackProductUseCase {
         // Build current stock from Product records directly
         // Each Product record is a stock entry (sku + warehouseId + boxCount/pairCount)
         const mappedStocks: TrackingStock[] = products
-            .filter(p => p.isActive && p.warehouse && (p.boxCount > 0 || p.pairCount > 0))
+            .filter(p => p.isActive && !p.deletedAt && p.warehouse && (p.boxCount > 0 || p.pairCount > 0))
             .map(p => ({
                 warehouseId: p.warehouseId || '',
                 warehouseName: p.warehouse!.name,

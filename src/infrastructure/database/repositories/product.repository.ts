@@ -335,14 +335,14 @@ export class ProductRepository implements IProductRepository {
 
         if (Object.keys(priceUpdate).length > 0) {
             await this.prisma.product.updateMany({
-                where: { sku, accountId },
+                where: { sku, accountId, deletedAt: null },
                 data: priceUpdate,
             });
         }
 
         // 2. Recalculate totals for each product individually based on its pairCount
         const products = await this.prisma.product.findMany({
-            where: { sku, accountId },
+            where: { sku, accountId, deletedAt: null },
             select: { id: true, pairCount: true, priceYuan: true, priceRub: true, recommendedSalePrice: true, actualSalePrice: true },
         });
 
