@@ -1,20 +1,20 @@
 /**
  * Создание (или обновление) аккаунта девелопера.
+ * Чистый Node.js — работает и в dev, и в prod контейнере (не требует ts-node/tsconfig).
  *
- * Запуск:
- *   DEV_EMAIL=dev@site.com DEV_PASSWORD='StrongPass123!' npm run seed:developer
+ * Запуск локально:
+ *   DEV_EMAIL=dev@site.com DEV_PASSWORD='StrongPass123!' node prisma/seed-developer.js
  *
- * Параметры (через переменные окружения, есть значения по умолчанию):
- *   DEV_EMAIL       — email девелопера (по умолчанию developer@four-brothers.local)
- *   DEV_PASSWORD    — пароль (по умолчанию Developer123!)
- *   DEV_FIRST_NAME  — имя (по умолчанию Dev)
- *   DEV_LAST_NAME   — фамилия (по умолчанию Developer)
+ * В докере (prod):
+ *   docker compose exec -e DEV_EMAIL=dev@site.com -e DEV_PASSWORD='StrongPass123!' api node prisma/seed-developer.js
  *
- * Роль DEVELOPER нельзя получить через обычную регистрацию — только этим скриптом
- * или напрямую в БД.
+ * Переменные окружения (есть значения по умолчанию):
+ *   DEV_EMAIL, DEV_PASSWORD, DEV_FIRST_NAME, DEV_LAST_NAME
+ *
+ * Роль DEVELOPER нельзя получить через обычную регистрацию — только этим скриптом.
  */
-import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
