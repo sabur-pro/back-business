@@ -2,6 +2,7 @@
  * User roles enum
  */
 export enum UserRole {
+    DEVELOPER = 'DEVELOPER',
     ORGANIZER = 'ORGANIZER',
     POINT_ADMIN = 'POINT_ADMIN',
 }
@@ -40,6 +41,10 @@ export class UserEntity {
 
     get isPointAdmin(): boolean {
         return this.role === UserRole.POINT_ADMIN;
+    }
+
+    get isDeveloper(): boolean {
+        return this.role === UserRole.DEVELOPER;
     }
 
     static create(props: {

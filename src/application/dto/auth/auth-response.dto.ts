@@ -19,7 +19,7 @@ export class UserResponseDto {
     @ApiPropertyOptional({ description: 'Телефон' })
     phone?: string;
 
-    @ApiProperty({ description: 'Роль пользователя', enum: ['ORGANIZER', 'POINT_ADMIN'] })
+    @ApiProperty({ description: 'Роль пользователя', enum: ['DEVELOPER', 'ORGANIZER', 'POINT_ADMIN'] })
     role: string;
 
     @ApiPropertyOptional({ description: 'ID организации (для сотрудников)' })
@@ -30,6 +30,29 @@ export class UserResponseDto {
 
     @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
     canManageCounterparties?: boolean;
+
+    @ApiPropertyOptional({ description: 'Сессия девелопера «под организатором» (даёт право удалять заявки)' })
+    isDeveloper?: boolean;
+}
+
+export class OrganizerListItemDto {
+    @ApiProperty({ description: 'ID пользователя-организатора' })
+    id: string;
+
+    @ApiProperty({ description: 'Email' })
+    email: string;
+
+    @ApiProperty({ description: 'Полное имя' })
+    fullName: string;
+
+    @ApiPropertyOptional({ description: 'Телефон' })
+    phone?: string;
+
+    @ApiPropertyOptional({ description: 'ID организации' })
+    accountId?: string;
+
+    @ApiProperty({ description: 'Активен ли аккаунт' })
+    isActive: boolean;
 }
 
 export class AuthResponseDto {

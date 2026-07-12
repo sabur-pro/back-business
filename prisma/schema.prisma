@@ -11,6 +11,7 @@ datasource db {
 // ==================== USERS & AUTH ====================
 
 enum UserRole {
+  DEVELOPER // Разработчик — супер-доступ, входит «под организатора»
   ORGANIZER // Владелец организации
   POINT_ADMIN // Админ точки
 }
@@ -48,6 +49,7 @@ model RefreshToken {
   token     String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatorId String? // ID девелопера, если это сессия «под организатором»
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -643,6 +645,7 @@ enum AuditAction {
   SHIPMENT_CREATED
   SHIPMENT_ACCEPTED
   SHIPMENT_CANCELLED
+  SHIPMENT_DELETED
 }
 
 model AuditLog {

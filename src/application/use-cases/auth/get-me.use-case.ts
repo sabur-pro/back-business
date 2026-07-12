@@ -9,7 +9,7 @@ export class GetMeUseCase {
         private readonly userRepository: IUserRepository,
     ) { }
 
-    async execute(userId: string): Promise<UserResponseDto> {
+    async execute(userId: string, isDeveloper = false): Promise<UserResponseDto> {
         const user = await this.userRepository.findById(userId);
         if (!user) {
             throw new NotFoundException('Пользователь не найден');
@@ -26,6 +26,8 @@ export class GetMeUseCase {
             accountId: user.accountId || undefined,
             canAddProducts: user.canAddProducts,
             canManageCounterparties: user.canManageCounterparties,
+            // Признак сессии девелопера берётся из JWT (dev), а не из БД
+            isDeveloper: isDeveloper || user.isDeveloper,
         };
     }
 }

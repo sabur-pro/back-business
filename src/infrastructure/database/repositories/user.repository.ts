@@ -45,6 +45,18 @@ export class UserRepository implements IUserRepository {
         }));
     }
 
+    async findByRole(role: UserRole): Promise<UserEntity[]> {
+        const users = await this.prisma.user.findMany({
+            where: { role },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        return users.map((u) => UserEntity.create({
+            ...u,
+            role: u.role as UserRole,
+        }));
+    }
+
     async create(data: CreateUserData): Promise<UserEntity> {
         const user = await this.prisma.user.create({
             data: {

@@ -40,6 +40,7 @@ export interface IUserRepository {
     findById(id: string): Promise<UserEntity | null>;
     findByEmail(email: string): Promise<UserEntity | null>;
     findByAccountId(accountId: string): Promise<UserEntity[]>;
+    findByRole(role: UserRole): Promise<UserEntity[]>;
     create(data: CreateUserData): Promise<UserEntity>;
     update(id: string, data: UpdateUserData): Promise<UserEntity>;
     delete(id: string): Promise<void>;

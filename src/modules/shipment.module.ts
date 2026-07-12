@@ -35,6 +35,7 @@ import {
     CreateShipmentUseCase,
     AcceptShipmentUseCase,
     CancelShipmentUseCase,
+    DeleteShipmentUseCase,
     GetShipmentsUseCase,
 } from '@application/use-cases/shipment';
 
@@ -75,6 +76,7 @@ import {
         CreateShipmentUseCase,
         AcceptShipmentUseCase,
         CancelShipmentUseCase,
+        DeleteShipmentUseCase,
         GetShipmentsUseCase,
     ],
 })

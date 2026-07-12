@@ -31,6 +31,7 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
                 token: data.token,
                 userId: data.userId,
                 expiresAt: data.expiresAt,
+                impersonatorId: data.impersonatorId ?? null,
             },
         });
 

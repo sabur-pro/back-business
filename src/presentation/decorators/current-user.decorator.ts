@@ -5,6 +5,10 @@ export interface CurrentUserData {
     userId: string;
     email: string;
     role: string;
+    // true, если это сессия девелопера, вошедшего «под организатора»
+    dev?: boolean;
+    // id самого девелопера (при dev === true)
+    devId?: string;
 }
 
 export const CurrentUser = createParamDecorator(
