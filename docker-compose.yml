@@ -43,6 +43,30 @@ services:
     networks:
       - mybusiness-internal
 
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    container_name: mybusiness-backup
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=mybusiness-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-warehouse_db}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      # Каждый день в 3:00 (по времени контейнера, обычно UTC — см. .env)
+      - BACKUP_CRON=${BACKUP_CRON:-0 3 * * *}
+      - TZ=${TZ:-Europe/Moscow}
+      - RUN_ON_START=${RUN_ON_START:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mybusiness-internal
+
   prisma-studio:
     build:
       context: .
