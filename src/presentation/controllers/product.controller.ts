@@ -25,6 +25,8 @@ import {
     BatchCreateProductsResponseDto,
     ProductSearchQueryDto,
     PaginatedProductsResponseDto,
+    CheckExistingSkusDto,
+    CheckExistingSkusResponseDto,
 } from '@application/dto/product';
 import {
     CreateProductUseCase,
@@ -32,6 +34,7 @@ import {
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    CheckExistingSkusUseCase,
     RestoreProductUseCase,
     TrackProductUseCase,
 } from '@application/use-cases/product';
@@ -46,6 +49,7 @@ export class ProductController {
         private readonly updateProductUseCase: UpdateProductUseCase,
         private readonly deleteProductUseCase: DeleteProductUseCase,
         private readonly batchCreateProductsUseCase: BatchCreateProductsUseCase,
+        private readonly checkExistingSkusUseCase: CheckExistingSkusUseCase,
         private readonly restoreProductUseCase: RestoreProductUseCase,
         private readonly trackProductUseCase: TrackProductUseCase,
     ) { }
@@ -72,6 +76,18 @@ export class ProductController {
         @Body() dto: BatchCreateProductsDto,
     ): Promise<BatchCreateProductsResponseDto> {
         return this.batchCreateProductsUseCase.execute(userId, dto);
+    }
+
+    @Post('check-existing')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Проверить, какие артикулы уже существуют на складе точки' })
+    @ApiResponse({ status: 200, description: 'Список существующих товаров', type: CheckExistingSkusResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    async checkExisting(
+        @CurrentUser('id') userId: string,
+        @Body() dto: CheckExistingSkusDto,
+    ): Promise<CheckExistingSkusResponseDto> {
+        return this.checkExistingSkusUseCase.execute(userId, dto);
     }
 
     @Get()

@@ -113,24 +113,35 @@ export class BatchCreateProductsUseCase {
             throw new ConflictException('В партии есть товары с одинаковыми артикулами');
         }
 
-        // Validate SKU uniqueness for all items within account + warehouse
-        for (const item of dto.items) {
-            const targetWarehouseId = shopWarehouse
-                ? shopWarehouse.id
-                : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
-            const existingProduct = await this.productRepository.findBySkuAndAccountId(item.sku, accountId, targetWarehouseId);
-            if (existingProduct) {
-                const label = shopWarehouse ? shopWarehouse.name : this.getWarehouseNameBySku(item.sku);
-                throw new ConflictException(`Товар с артикулом "${item.sku}" уже существует на складе "${label}"`);
-            }
-        }
+        // Resolve target warehouse + existing product for each item
+        const resolvedItems = await Promise.all(
+            dto.items.map(async (item) => {
+                const warehouseId = shopWarehouse
+                    ? shopWarehouse.id
+                    : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
+                const existingProduct = await this.productRepository.findBySkuAndAccountId(item.sku, accountId, warehouseId);
+                const isRestock = item.mode === 'restock';
 
-        // Create all products
-        const createData = dto.items.map((item) => {
-            const warehouseId = shopWarehouse
-                ? shopWarehouse.id
-                : warehouseCache.get(this.getWarehouseNameBySku(item.sku))!;
-            return {
+                // Guard: creating a product that already exists is not allowed —
+                // the client must explicitly choose the restock mode.
+                if (existingProduct && !isRestock) {
+                    const label = shopWarehouse ? shopWarehouse.name : this.getWarehouseNameBySku(item.sku);
+                    throw new ConflictException(`Товар с артикулом "${item.sku}" уже существует на складе "${label}". Выберите «повторный приход», чтобы пополнить существующий товар.`);
+                }
+
+                // Guard: restock requested but the product doesn't exist yet — create it instead.
+                if (isRestock && !existingProduct) {
+                    return { item, warehouseId, existingProduct: null, isRestock: false };
+                }
+
+                return { item, warehouseId, existingProduct, isRestock };
+            }),
+        );
+
+        // Create brand-new products
+        const createData = resolvedItems
+            .filter((r) => !r.isRestock)
+            .map(({ item, warehouseId }) => ({
                 sku: item.sku,
                 photoOriginal: item.photoOriginal,
                 photo: item.photo,
@@ -148,10 +159,71 @@ export class BatchCreateProductsUseCase {
                 barcode: item.barcode,
                 accountId,
                 warehouseId,
-            };
-        });
+            }));
 
-        const products = await this.productRepository.createMany(createData);
+        const createdProducts = createData.length > 0
+            ? await this.productRepository.createMany(createData)
+            : [];
+
+        // Restock existing products (повторный приход) — add quantities & value
+        const restockedProducts: ProductEntity[] = [];
+        const restockAuditLogs: any[] = [];
+        for (const { item, existingProduct } of resolvedItems.filter((r) => r.isRestock && r.existingProduct)) {
+            const prev = existingProduct!;
+            const newBoxCount = prev.boxCount + item.boxCount;
+            const newPairCount = prev.pairCount + item.pairCount;
+            const newTotalYuan = prev.totalYuan + item.totalYuan;
+            const newTotalRub = prev.totalRub + item.totalRub;
+            const newTotalRecommendedSale = prev.totalRecommendedSale + (item.totalRecommendedSale ?? 0);
+
+            const updated = await this.productRepository.update(prev.id, {
+                boxCount: newBoxCount,
+                pairCount: newPairCount,
+                totalYuan: newTotalYuan,
+                totalRub: newTotalRub,
+                totalRecommendedSale: newTotalRecommendedSale,
+                // Reflect the latest arrival price on the product card
+                priceYuan: item.priceYuan,
+                priceRub: item.priceRub,
+                recommendedSalePrice: item.recommendedSalePrice ?? prev.recommendedSalePrice,
+            });
+            restockedProducts.push(updated);
+
+            // Log the arrival delta (this receipt's amounts) so it appears in receipt history
+            restockAuditLogs.push({
+                action: AuditAction.PRODUCT_BATCH_CREATED,
+                entityType: 'PRODUCT',
+                entityId: prev.id,
+                userId,
+                accountId,
+                newData: {
+                    sku: prev.sku,
+                    photoOriginal: prev.photoOriginal,
+                    photo: prev.photo,
+                    sizeRange: item.sizeRange ?? prev.sizeRange,
+                    boxCount: item.boxCount,
+                    pairCount: item.pairCount,
+                    priceYuan: item.priceYuan,
+                    priceRub: item.priceRub,
+                    totalYuan: item.totalYuan,
+                    totalRub: item.totalRub,
+                    recommendedSalePrice: item.recommendedSalePrice ?? 0,
+                    totalRecommendedSale: item.totalRecommendedSale ?? 0,
+                    barcode: prev.barcode,
+                    warehouseId: prev.warehouseId,
+                },
+                metadata: {
+                    pointId: dto.pointId,
+                    pointName: point.name,
+                    supplierId: dto.supplierId ?? null,
+                    restock: true,
+                    stockBefore: prev.pairCount,
+                    stockAfter: newPairCount,
+                },
+            });
+        }
+
+        const products = [...createdProducts, ...restockedProducts];
 
         // Handle supplier tracking
         if (dto.supplierId) {
@@ -163,8 +235,8 @@ export class BatchCreateProductsUseCase {
                 throw new BadRequestException('Указанный контрагент не является поставщиком');
             }
 
-            // Calculate total goods value
-            const totalGoodsRub = createData.reduce((sum, item) => sum + item.totalRub, 0);
+            // Calculate total goods value across the whole receipt (new + restocked)
+            const totalGoodsRub = dto.items.reduce((sum, item) => sum + item.totalRub, 0);
             const roundedTotal = Math.round(totalGoodsRub * 100) / 100;
 
             // Record goods received from supplier (increases our debt)
@@ -189,8 +261,8 @@ export class BatchCreateProductsUseCase {
             }
         }
 
-        // Record audit logs for batch creation
-        const auditLogs = products.map((product) => ({
+        // Record audit logs for newly created products
+        const createAuditLogs = createdProducts.map((product) => ({
             action: AuditAction.PRODUCT_BATCH_CREATED,
             entityType: 'PRODUCT',
             entityId: product.id,
@@ -219,11 +291,16 @@ export class BatchCreateProductsUseCase {
                 batchSize: products.length,
             },
         }));
-        await this.auditLogRepository.createMany(auditLogs);
+        const auditLogs = [...createAuditLogs, ...restockAuditLogs];
+        if (auditLogs.length > 0) {
+            await this.auditLogRepository.createMany(auditLogs);
+        }
 
         return {
             products,
             count: products.length,
+            createdCount: createdProducts.length,
+            restockedCount: restockedProducts.length,
         };
     }
 

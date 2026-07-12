@@ -41,6 +41,7 @@ import {
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    CheckExistingSkusUseCase,
     RestoreProductUseCase,
     TrackProductUseCase,
 } from '@application/use-cases/product';
@@ -88,6 +89,7 @@ import {
         UpdateProductUseCase,
         DeleteProductUseCase,
         BatchCreateProductsUseCase,
+        CheckExistingSkusUseCase,
         RestoreProductUseCase,
         TrackProductUseCase,
     ],
