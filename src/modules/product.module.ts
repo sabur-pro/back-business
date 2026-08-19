@@ -10,6 +10,7 @@ import {
     WarehouseRepository,
     CounterpartyRepository,
     AuditLogRepository,
+    OrgSettingsRepository,
 } from '@infrastructure/database/repositories';
 import {
     PRODUCT_REPOSITORY,
@@ -35,6 +36,9 @@ import {
 import {
     AUDIT_LOG_REPOSITORY,
 } from '@domain/repositories/audit-log.repository.interface';
+import {
+    ORG_SETTINGS_REPOSITORY,
+} from '@domain/repositories/org-settings.repository.interface';
 import {
     CreateProductUseCase,
     GetProductsUseCase,
@@ -82,6 +86,10 @@ import {
         {
             provide: AUDIT_LOG_REPOSITORY,
             useClass: AuditLogRepository,
+        },
+        {
+            provide: ORG_SETTINGS_REPOSITORY,
+            useClass: OrgSettingsRepository,
         },
         // Use Cases
         CreateProductUseCase,

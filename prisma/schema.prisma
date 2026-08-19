@@ -129,6 +129,7 @@ model OrgSettings {
   canAddPoints     Boolean  @default(true)
   canAddWarehouses Boolean  @default(true)
   canAddProducts   Boolean  @default(false)
+  hardDeleteProducts Boolean @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

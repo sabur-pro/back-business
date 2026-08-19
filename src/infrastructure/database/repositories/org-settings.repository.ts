@@ -24,6 +24,7 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
             canAddProducts: settings.canAddProducts,
+            hardDeleteProducts: settings.hardDeleteProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });
@@ -38,12 +39,14 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
                 canAddPoints: data.canAddPoints ?? true,
                 canAddWarehouses: data.canAddWarehouses ?? true,
                 canAddProducts: data.canAddProducts ?? false,
+                hardDeleteProducts: data.hardDeleteProducts ?? false,
             },
             update: {
                 canAddEmployees: data.canAddEmployees,
                 canAddPoints: data.canAddPoints,
                 canAddWarehouses: data.canAddWarehouses,
                 canAddProducts: data.canAddProducts,
+                hardDeleteProducts: data.hardDeleteProducts,
             },
         });
 
@@ -54,6 +57,7 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
             canAddProducts: settings.canAddProducts,
+            hardDeleteProducts: settings.hardDeleteProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });

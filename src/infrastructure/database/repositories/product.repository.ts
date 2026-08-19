@@ -375,6 +375,17 @@ export class ProductRepository implements IProductRepository {
         return result.count;
     }
 
+    async hardDelete(id: string): Promise<void> {
+        await this.prisma.stock.deleteMany({ where: { productId: id } });
+        await this.prisma.product.delete({ where: { id } });
+    }
+
+    async hardDeleteMany(ids: string[]): Promise<number> {
+        await this.prisma.stock.deleteMany({ where: { productId: { in: ids } } });
+        const result = await this.prisma.product.deleteMany({ where: { id: { in: ids } } });
+        return result.count;
+    }
+
     async restore(id: string): Promise<ProductEntity> {
         const product = await this.prisma.product.update({
             where: { id },

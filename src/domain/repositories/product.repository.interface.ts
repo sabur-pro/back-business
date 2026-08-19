@@ -102,6 +102,8 @@ export interface IProductRepository {
     updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number }): Promise<void>;
     delete(id: string): Promise<void>;
     deleteMany(ids: string[]): Promise<number>;
+    hardDelete(id: string): Promise<void>;
+    hardDeleteMany(ids: string[]): Promise<number>;
 }
 
 export const PRODUCT_REPOSITORY = Symbol('IProductRepository');

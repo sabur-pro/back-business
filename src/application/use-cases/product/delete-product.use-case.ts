@@ -19,6 +19,10 @@ import {
     IAuditLogRepository,
     AUDIT_LOG_REPOSITORY,
 } from '@domain/repositories/audit-log.repository.interface';
+import {
+    IOrgSettingsRepository,
+    ORG_SETTINGS_REPOSITORY,
+} from '@domain/repositories/org-settings.repository.interface';
 import { AuditAction } from '@domain/entities/audit-log.entity';
 import { UserRole } from '@domain/entities/user.entity';
 
@@ -35,6 +39,8 @@ export class DeleteProductUseCase {
         private readonly pointMemberRepository: IPointMemberRepository,
         @Inject(AUDIT_LOG_REPOSITORY)
         private readonly auditLogRepository: IAuditLogRepository,
+        @Inject(ORG_SETTINGS_REPOSITORY)
+        private readonly orgSettingsRepository: IOrgSettingsRepository,
     ) { }
 
     async execute(userId: string, productId: string): Promise<void> {
@@ -51,8 +57,13 @@ export class DeleteProductUseCase {
         // Check permissions
         await this.checkPermissions(userId, user.role, product.accountId);
 
-        // Soft-delete the product
-        await this.productRepository.delete(productId);
+        // Check organization settings for hard delete vs soft delete
+        const settings = await this.orgSettingsRepository.findByAccountId(product.accountId);
+        if (settings?.hardDeleteProducts) {
+            await this.productRepository.hardDelete(productId);
+        } else {
+            await this.productRepository.delete(productId);
+        }
 
         // Record audit log
         await this.auditLogRepository.create({
@@ -103,7 +114,24 @@ export class DeleteProductUseCase {
             await this.checkPermissions(userId, user.role, accountId);
         }
 
-        const deleted = await this.productRepository.deleteMany(productIds);
+        // Group products by accountId and perform delete/hardDelete based on org settings
+        const productsByAccount = new Map<string, typeof products>();
+        for (const p of products) {
+            const list = productsByAccount.get(p.accountId) || [];
+            list.push(p);
+            productsByAccount.set(p.accountId, list);
+        }
+
+        let totalDeleted = 0;
+        for (const [accId, accProducts] of productsByAccount.entries()) {
+            const settings = await this.orgSettingsRepository.findByAccountId(accId);
+            const ids = accProducts.map((p) => p.id);
+            if (settings?.hardDeleteProducts) {
+                totalDeleted += await this.productRepository.hardDeleteMany(ids);
+            } else {
+                totalDeleted += await this.productRepository.deleteMany(ids);
+            }
+        }
 
         // Record audit logs for each deleted product
         const auditLogs = products.map((product) => ({
@@ -122,7 +150,7 @@ export class DeleteProductUseCase {
         }));
         await this.auditLogRepository.createMany(auditLogs);
 
-        return { deleted };
+        return { deleted: totalDeleted };
     }
 
     private async checkPermissions(
