@@ -20,36 +20,30 @@ export class GetOrgSettingsUseCase {
         const user = await this.userRepository.findById(userId);
         if (!user) throw new ForbiddenException('Пользователь не найден');
 
-        let accountId: string;
+        let accountId: string | undefined;
 
         if (user.role === UserRole.ORGANIZER) {
             const accounts = await this.accountRepository.findByOwnerId(userId);
-            if (accounts.length === 0) {
-                // Return defaults if no account
-                return {
-                    id: '',
-                    accountId: '',
-                    canAddEmployees: true,
-                    canAddPoints: true,
-                    canAddWarehouses: true,
-                    canAddProducts: false,
-                    hardDeleteProducts: false,
-                };
+            if (accounts.length > 0) {
+                accountId = accounts[0].id;
+            } else if (user.accountId) {
+                accountId = user.accountId;
             }
-            accountId = accounts[0].id;
         } else {
-            if (!user.accountId) {
-                return {
-                    id: '',
-                    accountId: '',
-                    canAddEmployees: true,
-                    canAddPoints: true,
-                    canAddWarehouses: true,
-                    canAddProducts: false,
-                    hardDeleteProducts: false,
-                };
-            }
-            accountId = user.accountId;
+            accountId = user.accountId || undefined;
+        }
+
+        if (!accountId) {
+            // Return defaults if no account found
+            return {
+                id: '',
+                accountId: '',
+                canAddEmployees: true,
+                canAddPoints: true,
+                canAddWarehouses: true,
+                canAddProducts: false,
+                hardDeleteProducts: false,
+            };
         }
 
         const settings = await this.orgSettingsRepository.findByAccountId(accountId);
@@ -94,11 +88,17 @@ export class UpdateOrgSettingsUseCase {
             throw new ForbiddenException('Только организатор может изменять настройки');
         }
 
+        let accountId: string | undefined;
         const accounts = await this.accountRepository.findByOwnerId(userId);
-        if (accounts.length === 0) {
+        if (accounts.length > 0) {
+            accountId = accounts[0].id;
+        } else if (user.accountId) {
+            accountId = user.accountId;
+        }
+
+        if (!accountId) {
             throw new ForbiddenException('У вас нет организации');
         }
-        const accountId = accounts[0].id;
 
         const settings = await this.orgSettingsRepository.upsert(accountId, {
             canAddEmployees: dto.canAddEmployees,
