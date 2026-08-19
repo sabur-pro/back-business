@@ -84,7 +84,7 @@ export class UpdateOrgSettingsUseCase {
 
     async execute(userId: string, dto: UpdateOrgSettingsDto): Promise<OrgSettingsResponseDto> {
         const user = await this.userRepository.findById(userId);
-        if (!user || user.role !== UserRole.ORGANIZER) {
+        if (!user || (user.role !== UserRole.ORGANIZER && user.role !== UserRole.DEVELOPER)) {
             throw new ForbiddenException('Только организатор может изменять настройки');
         }
 
