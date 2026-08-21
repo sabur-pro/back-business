@@ -72,6 +72,22 @@ export class CancelSaleUseCase {
                 }
             }
 
+            // Возвращаем количество в партии поступления
+            const saleItems = await tx.saleItem.findMany({
+                where: { saleId, arrivalId: { not: null } },
+                select: { arrivalId: true, boxCount: true, pairCount: true },
+            });
+
+            for (const item of saleItems) {
+                await tx.productArrival.update({
+                    where: { id: item.arrivalId! },
+                    data: {
+                        soldBoxes: { decrement: item.boxCount },
+                        soldPairs: { decrement: item.pairCount },
+                    },
+                });
+            }
+
             await tx.sale.update({
                 where: { id: saleId },
                 data: { status: 'CANCELLED' },

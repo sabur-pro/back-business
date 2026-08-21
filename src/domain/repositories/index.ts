@@ -6,6 +6,7 @@ export * from './warehouse.repository.interface';
 export * from './point-member.repository.interface';
 export * from './org-settings.repository.interface';
 export * from './product.repository.interface';
+export * from './product-arrival.repository.interface';
 export * from './shipment.repository.interface';
 export * from './shop-employee.repository.interface';
 export * from './sale.repository.interface';

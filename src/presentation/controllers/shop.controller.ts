@@ -5,6 +5,7 @@ import {
     Delete,
     Body,
     Param,
+    Query,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
@@ -18,11 +19,19 @@ import { CurrentUser } from '../decorators';
 import {
     AddShopEmployeeDto,
     ShopEmployeeResponseDto,
+    ArrivalDaysQueryDto,
+    ArrivalDayDto,
+    ArrivalsQueryDto,
+    ArrivalsResponseDto,
+    CreateReturnDto,
+    ReturnResponseDto,
 } from '@application/dto/shop';
 import {
     AddShopEmployeeUseCase,
     RemoveShopEmployeeUseCase,
     GetShopEmployeesUseCase,
+    GetShopArrivalsUseCase,
+    CreateShopReturnUseCase,
 } from '@application/use-cases/shop';
 
 @ApiTags('Магазины')
@@ -33,6 +42,8 @@ export class ShopController {
         private readonly addShopEmployeeUseCase: AddShopEmployeeUseCase,
         private readonly removeShopEmployeeUseCase: RemoveShopEmployeeUseCase,
         private readonly getShopEmployeesUseCase: GetShopEmployeesUseCase,
+        private readonly getShopArrivalsUseCase: GetShopArrivalsUseCase,
+        private readonly createShopReturnUseCase: CreateShopReturnUseCase,
     ) { }
 
     @Post('employees')
@@ -64,6 +75,43 @@ export class ShopController {
         @CurrentUser('id') userId: string,
     ): Promise<ShopEmployeeResponseDto[]> {
         return this.getShopEmployeesUseCase.executeByUserId(userId);
+    }
+
+    @Get(':shopId/arrival-days')
+    @ApiOperation({ summary: 'Дни поступления товара в магазин со сводкой' })
+    @ApiResponse({ status: 200, description: 'Список дней', type: [ArrivalDayDto] })
+    @ApiResponse({ status: 403, description: 'Нет доступа к точке' })
+    async getArrivalDays(
+        @CurrentUser('id') userId: string,
+        @Param('shopId') shopId: string,
+        @Query() query: ArrivalDaysQueryDto,
+    ): Promise<ArrivalDayDto[]> {
+        return this.getShopArrivalsUseCase.executeDays(userId, shopId, query);
+    }
+
+    @Get(':shopId/arrivals')
+    @ApiOperation({ summary: 'Товары, поступившие в магазин за указанный день' })
+    @ApiResponse({ status: 200, description: 'Партии за день', type: ArrivalsResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа к точке' })
+    async getArrivals(
+        @CurrentUser('id') userId: string,
+        @Param('shopId') shopId: string,
+        @Query() query: ArrivalsQueryDto,
+    ): Promise<ArrivalsResponseDto> {
+        return this.getShopArrivalsUseCase.executeByDate(userId, shopId, query);
+    }
+
+    @Post(':shopId/returns')
+    @ApiOperation({ summary: 'Оформить возврат остатка из магазина' })
+    @ApiResponse({ status: 201, description: 'Возврат оформлен', type: ReturnResponseDto })
+    @ApiResponse({ status: 400, description: 'Недостаточно товара для возврата' })
+    @ApiResponse({ status: 403, description: 'Нет доступа к точке' })
+    async createReturn(
+        @CurrentUser('id') userId: string,
+        @Param('shopId') shopId: string,
+        @Body() dto: CreateReturnDto,
+    ): Promise<ReturnResponseDto> {
+        return this.createShopReturnUseCase.execute(userId, shopId, dto);
     }
 
     @Delete('employees/:shopId/:userId')

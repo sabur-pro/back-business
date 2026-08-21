@@ -117,6 +117,8 @@ export class ProductController {
             page: query.page,
             limit: query.limit,
             search: query.search,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
     }
 
@@ -142,6 +144,8 @@ export class ProductController {
             page: query.page,
             limit: query.limit,
             search: query.search,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
     }
 
@@ -158,6 +162,8 @@ export class ProductController {
             limit: query.limit,
             search: query.search,
             zeroBoxes: query.zeroBoxes,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
     }
 
@@ -184,7 +190,21 @@ export class ProductController {
             limit: query.limit,
             search: query.search,
             zeroBoxes: query.zeroBoxes,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Получить товар по ID' })
+    @ApiResponse({ status: 200, description: 'Товар', type: ProductResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    @ApiResponse({ status: 404, description: 'Товар не найден' })
+    async getById(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ): Promise<ProductResponseDto> {
+        return this.getProductsUseCase.executeById(userId, id);
     }
 
     @Put(':id')

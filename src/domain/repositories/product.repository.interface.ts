@@ -1,10 +1,22 @@
 import { ProductEntity } from '../entities/product.entity';
 
+export type ProductSortField =
+    | 'arrivedAt'
+    | 'sku'
+    | 'boxCount'
+    | 'pairCount'
+    | 'priceRub'
+    | 'recommendedSalePrice'
+    | 'totalRub';
+
 export interface ProductSearchParams {
     page?: number;
     limit?: number;
     search?: string;
     zeroBoxes?: boolean;
+    /** Поле сортировки, по умолчанию — по прибытию товара (arrivedAt) */
+    sortBy?: ProductSortField;
+    order?: 'asc' | 'desc';
 }
 
 export interface CategoryStats {
@@ -63,6 +75,7 @@ export interface CreateProductData {
     accountId: string;
     warehouseId?: string | null;
     isActive?: boolean;
+    lastArrivedAt?: Date;
 }
 
 export interface UpdateProductData {
@@ -82,6 +95,7 @@ export interface UpdateProductData {
     totalActualSale?: number;
     barcode?: string | null;
     isActive?: boolean;
+    lastArrivedAt?: Date;
 }
 
 /**

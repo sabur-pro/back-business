@@ -411,6 +411,9 @@ export class ProductResponseDto {
     @ApiProperty({ description: 'Активен ли товар' })
     isActive: boolean;
 
+    @ApiPropertyOptional({ description: 'Дата последнего поступления', nullable: true })
+    lastArrivedAt?: Date | null;
+
     @ApiProperty({ description: 'Дата создания' })
     createdAt: Date;
 
@@ -494,6 +497,22 @@ export class ProductSearchQueryDto {
     @IsOptional()
     @Type(() => Boolean)
     zeroBoxes?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Поле сортировки',
+        enum: ['arrivedAt', 'sku', 'boxCount', 'pairCount', 'priceRub', 'recommendedSalePrice', 'totalRub'],
+        example: 'arrivedAt',
+    })
+    @IsIn(['arrivedAt', 'sku', 'boxCount', 'pairCount', 'priceRub', 'recommendedSalePrice', 'totalRub'], {
+        message: 'Недопустимое поле сортировки',
+    })
+    @IsOptional()
+    sortBy?: string;
+
+    @ApiPropertyOptional({ description: 'Направление сортировки', enum: ['asc', 'desc'], example: 'desc' })
+    @IsIn(['asc', 'desc'], { message: 'Направление сортировки: asc или desc' })
+    @IsOptional()
+    order?: string;
 }
 
 export class PaginatedProductsResponseDto {

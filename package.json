@@ -22,7 +22,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:push": "prisma db push",
-    "seed:developer": "node prisma/seed-developer.js"
+    "seed:developer": "node prisma/seed-developer.js",
+    "backfill:arrivals": "node prisma/backfill-arrivals.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

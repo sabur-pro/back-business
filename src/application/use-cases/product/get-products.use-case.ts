@@ -1,4 +1,4 @@
-import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
     IProductRepository,
     PRODUCT_REPOSITORY,
@@ -57,6 +57,29 @@ export class GetProductsUseCase {
         }
 
         return [];
+    }
+
+    async executeById(userId: string, productId: string): Promise<ProductEntity> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new ForbiddenException('Пользователь не найден');
+        }
+
+        const product = await this.productRepository.findById(productId);
+        if (!product) {
+            throw new NotFoundException('Товар не найден');
+        }
+
+        if (user.role === UserRole.ORGANIZER) {
+            const accounts = await this.accountRepository.findByOwnerId(userId);
+            if (!accounts.some((a) => a.id === product.accountId)) {
+                throw new ForbiddenException('Нет доступа к данному товару');
+            }
+        } else if (user.accountId !== product.accountId) {
+            throw new ForbiddenException('Нет доступа к данному товару');
+        }
+
+        return product;
     }
 
     async executePaginated(userId: string, accountId: string, params: ProductSearchParams): Promise<PaginatedProducts> {

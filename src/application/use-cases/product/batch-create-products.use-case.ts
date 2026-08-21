@@ -27,6 +27,12 @@ import {
     IAuditLogRepository,
     AUDIT_LOG_REPOSITORY,
 } from '@domain/repositories/audit-log.repository.interface';
+import {
+    IProductArrivalRepository,
+    PRODUCT_ARRIVAL_REPOSITORY,
+    CreateArrivalData,
+} from '@domain/repositories/product-arrival.repository.interface';
+import { ArrivalSource } from '@domain/entities/product-arrival.entity';
 import { ProductEntity } from '@domain/entities/product.entity';
 import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { UserRole } from '@domain/entities/user.entity';
@@ -52,6 +58,8 @@ export class BatchCreateProductsUseCase {
         private readonly counterpartyRepository: ICounterpartyRepository,
         @Inject(AUDIT_LOG_REPOSITORY)
         private readonly auditLogRepository: IAuditLogRepository,
+        @Inject(PRODUCT_ARRIVAL_REPOSITORY)
+        private readonly productArrivalRepository: IProductArrivalRepository,
     ) { }
 
     private normalizeSkuPrefix(char: string): string {
@@ -138,6 +146,10 @@ export class BatchCreateProductsUseCase {
             }),
         );
 
+        // Журнал поступлений — партии этого прихода
+        const arrivedAt = new Date();
+        const arrivalData: CreateArrivalData[] = [];
+
         // Create brand-new products
         const createData = resolvedItems
             .filter((r) => !r.isRestock)
@@ -159,6 +171,7 @@ export class BatchCreateProductsUseCase {
                 barcode: item.barcode,
                 accountId,
                 warehouseId,
+                lastArrivedAt: arrivedAt,
             }));
 
         const createdProducts = createData.length > 0
@@ -168,7 +181,7 @@ export class BatchCreateProductsUseCase {
         // Restock existing products (повторный приход) — add quantities & value
         const restockedProducts: ProductEntity[] = [];
         const restockAuditLogs: any[] = [];
-        for (const { item, existingProduct } of resolvedItems.filter((r) => r.isRestock && r.existingProduct)) {
+        for (const { item, existingProduct, warehouseId } of resolvedItems.filter((r) => r.isRestock && r.existingProduct)) {
             const prev = existingProduct!;
             const newBoxCount = prev.boxCount + item.boxCount;
             const newPairCount = prev.pairCount + item.pairCount;
@@ -186,8 +199,26 @@ export class BatchCreateProductsUseCase {
                 priceYuan: item.priceYuan,
                 priceRub: item.priceRub,
                 recommendedSalePrice: item.recommendedSalePrice ?? prev.recommendedSalePrice,
+                lastArrivedAt: arrivedAt,
             });
             restockedProducts.push(updated);
+
+            arrivalData.push({
+                accountId,
+                warehouseId,
+                productId: prev.id,
+                sku: item.sku,
+                photo: item.photo ?? prev.photo,
+                sizeRange: item.sizeRange ?? prev.sizeRange,
+                boxCount: item.boxCount,
+                pairCount: item.pairCount,
+                priceYuan: item.priceYuan,
+                priceRub: item.priceRub,
+                recommendedSalePrice: item.recommendedSalePrice ?? prev.recommendedSalePrice,
+                sourceType: ArrivalSource.RECEIPT,
+                sourceId: null,
+                arrivedAt,
+            });
 
             // Log the arrival delta (this receipt's amounts) so it appears in receipt history
             restockAuditLogs.push({
@@ -222,6 +253,31 @@ export class BatchCreateProductsUseCase {
                 },
             });
         }
+
+        // Партии по вновь созданным товарам (порядок createdProducts совпадает с createData)
+        const newlyCreatedSources = resolvedItems.filter((r) => !r.isRestock);
+        createdProducts.forEach((product, index) => {
+            const source = newlyCreatedSources[index];
+            if (!source) return;
+            arrivalData.push({
+                accountId,
+                warehouseId: source.warehouseId,
+                productId: product.id,
+                sku: product.sku,
+                photo: product.photo,
+                sizeRange: product.sizeRange,
+                boxCount: product.boxCount,
+                pairCount: product.pairCount,
+                priceYuan: product.priceYuan,
+                priceRub: product.priceRub,
+                recommendedSalePrice: product.recommendedSalePrice,
+                sourceType: ArrivalSource.RECEIPT,
+                sourceId: null,
+                arrivedAt,
+            });
+        });
+
+        await this.productArrivalRepository.createMany(arrivalData);
 
         const products = [...createdProducts, ...restockedProducts];
 

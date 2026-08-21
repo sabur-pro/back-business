@@ -157,11 +157,13 @@ model Warehouse {
 
   stocks        Stock[]
   products      Product[]
-  transfersOut  Transfer[]     @relation("TransferFromWarehouse")
-  transfersIn   Transfer[]     @relation("TransferToWarehouse")
+  transfersOut  Transfer[]       @relation("TransferFromWarehouse")
+  transfersIn   Transfer[]       @relation("TransferToWarehouse")
   shopEmployees ShopEmployee[]
-  sales         Sale[]         @relation("SaleShop")
+  sales         Sale[]           @relation("SaleShop")
   cashRegister  CashRegister?
+  arrivals      ProductArrival[]
+  returns       ProductReturn[]
 
   @@index([pointId])
   @@index([type])
@@ -203,6 +205,7 @@ model Product {
   warehouse            Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
   isActive             Boolean    @default(true)
   deletedAt            DateTime?
+  lastArrivedAt        DateTime? // Дата последнего поступления — для сортировки «по прибытию»
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
 
@@ -210,11 +213,14 @@ model Product {
   goodsReceiptItems GoodsReceiptItem[]
   transferItems     TransferItem[]
   saleItems         SaleItem[]
+  arrivals          ProductArrival[]
+  returnItems       ProductReturnItem[]
 
   @@index([sku])
   @@index([barcode])
   @@index([accountId])
   @@index([warehouseId])
+  @@index([lastArrivedAt])
 }
 
 model Stock {
@@ -378,6 +384,7 @@ model Sale {
   status           SaleStatus    @default(COMPLETED)
   note             String?
   soldById         String?
+  arrivalDate      DateTime? // За какой день поступления оформлена групповая продажа
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -396,27 +403,126 @@ enum SaleStatus {
 }
 
 model SaleItem {
-  id                   String   @id @default(uuid())
+  id                   String          @id @default(uuid())
   saleId               String
-  sale                 Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale                 Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
   productId            String?
-  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product              Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  arrivalId            String? // Из какой партии поступления продано
+  arrival              ProductArrival? @relation(fields: [arrivalId], references: [id], onDelete: SetNull)
   sku                  String
   photo                String?
   sizeRange            String?
-  boxCount             Int      @default(0)
-  pairCount            Int      @default(0)
-  priceYuan            Decimal  @db.Decimal(12, 2)
-  priceRub             Decimal  @db.Decimal(12, 2)
-  totalYuan            Decimal  @db.Decimal(12, 2)
-  totalRub             Decimal  @db.Decimal(12, 2)
-  recommendedSalePrice Decimal  @db.Decimal(12, 2)
-  actualSalePrice      Decimal  @db.Decimal(12, 2)
-  totalRecommended     Decimal  @db.Decimal(12, 2)
-  totalActual          Decimal  @db.Decimal(12, 2)
-  profit               Decimal  @db.Decimal(12, 2)
+  boxCount             Int             @default(0)
+  pairCount            Int             @default(0)
+  priceYuan            Decimal         @db.Decimal(12, 2)
+  priceRub             Decimal         @db.Decimal(12, 2)
+  totalYuan            Decimal         @db.Decimal(12, 2)
+  totalRub             Decimal         @db.Decimal(12, 2)
+  recommendedSalePrice Decimal         @db.Decimal(12, 2)
+  actualSalePrice      Decimal         @db.Decimal(12, 2)
+  totalRecommended     Decimal         @db.Decimal(12, 2)
+  totalActual          Decimal         @db.Decimal(12, 2)
+  profit               Decimal         @db.Decimal(12, 2)
 
   @@index([saleId])
+  @@index([productId])
+  @@index([arrivalId])
+}
+
+// ==================== PRODUCT ARRIVALS (ЖУРНАЛ ПОСТУПЛЕНИЙ) ====================
+
+enum ArrivalSource {
+  SHIPMENT // Приёмка отправки из другой точки
+  RECEIPT // Приход (создание товара на точке)
+  MANUAL // Ручная корректировка
+}
+
+/// Партия поступления товара на склад/в магазин.
+/// Product хранит текущий остаток, ProductArrival — сколько и когда пришло,
+/// сколько из этой партии продано и сколько возвращено.
+model ProductArrival {
+  id                   String        @id @default(uuid())
+  accountId            String
+  warehouseId          String
+  warehouse            Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productId            String?
+  product              Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sku                  String
+  photo                String?
+  sizeRange            String?
+  boxCount             Int           @default(0) // Сколько коробок пришло
+  pairCount            Int           @default(0) // Сколько пар пришло
+  soldBoxes            Int           @default(0) // Продано коробок из партии
+  soldPairs            Int           @default(0) // Продано пар из партии
+  returnedBoxes        Int           @default(0) // Возвращено коробок из партии
+  returnedPairs        Int           @default(0) // Возвращено пар из партии
+  priceYuan            Decimal       @db.Decimal(12, 2)
+  priceRub             Decimal       @db.Decimal(12, 2)
+  recommendedSalePrice Decimal       @default(0) @db.Decimal(12, 2)
+  sourceType           ArrivalSource @default(SHIPMENT)
+  sourceId             String? // transferId / goodsReceiptId
+  arrivedAt            DateTime // Дата поступления — ключ для группировки по дням
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  saleItems   SaleItem[]
+  returnItems ProductReturnItem[]
+
+  @@index([warehouseId, arrivedAt])
+  @@index([accountId])
+  @@index([productId])
+  @@index([sku])
+  @@index([sourceType, sourceId])
+}
+
+// ==================== RETURNS (ВОЗВРАТ ОСТАТКА) ====================
+
+model ProductReturn {
+  id          String    @id @default(uuid())
+  number      String    @unique
+  accountId   String
+  pointId     String
+  shopId      String
+  shop        Warehouse @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  arrivalDate DateTime? // За какой день поступления оформлен возврат
+  totalBoxes  Int       @default(0)
+  totalPairs  Int       @default(0)
+  totalYuan   Decimal   @default(0) @db.Decimal(12, 2)
+  totalRub    Decimal   @default(0) @db.Decimal(12, 2)
+  note        String?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items ProductReturnItem[]
+
+  @@index([shopId])
+  @@index([accountId])
+  @@index([arrivalDate])
+  @@index([number])
+}
+
+model ProductReturnItem {
+  id        String          @id @default(uuid())
+  returnId  String
+  return    ProductReturn   @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  arrivalId String?
+  arrival   ProductArrival? @relation(fields: [arrivalId], references: [id], onDelete: SetNull)
+  productId String?
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sku       String
+  photo     String?
+  sizeRange String?
+  boxCount  Int             @default(0)
+  pairCount Int             @default(0)
+  priceYuan Decimal         @db.Decimal(12, 2)
+  priceRub  Decimal         @db.Decimal(12, 2)
+  totalYuan Decimal         @db.Decimal(12, 2)
+  totalRub  Decimal         @db.Decimal(12, 2)
+
+  @@index([returnId])
+  @@index([arrivalId])
   @@index([productId])
 }
 

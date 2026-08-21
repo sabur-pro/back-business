@@ -6,6 +6,7 @@ import {
     PointRepository,
     UserRepository,
     ShopEmployeeRepository,
+    ProductArrivalRepository,
 } from '@infrastructure/database/repositories';
 import {
     WAREHOUSE_REPOSITORY,
@@ -20,9 +21,14 @@ import {
     SHOP_EMPLOYEE_REPOSITORY,
 } from '@domain/repositories/shop-employee.repository.interface';
 import {
+    PRODUCT_ARRIVAL_REPOSITORY,
+} from '@domain/repositories/product-arrival.repository.interface';
+import {
     AddShopEmployeeUseCase,
     RemoveShopEmployeeUseCase,
     GetShopEmployeesUseCase,
+    GetShopArrivalsUseCase,
+    CreateShopReturnUseCase,
 } from '@application/use-cases/shop';
 
 @Module({
@@ -46,10 +52,16 @@ import {
             provide: SHOP_EMPLOYEE_REPOSITORY,
             useClass: ShopEmployeeRepository,
         },
+        {
+            provide: PRODUCT_ARRIVAL_REPOSITORY,
+            useClass: ProductArrivalRepository,
+        },
         // Use Cases
         AddShopEmployeeUseCase,
         RemoveShopEmployeeUseCase,
         GetShopEmployeesUseCase,
+        GetShopArrivalsUseCase,
+        CreateShopReturnUseCase,
     ],
 })
 export class ShopModule { }

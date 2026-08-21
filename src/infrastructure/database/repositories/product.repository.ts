@@ -14,6 +14,30 @@ import { ProductEntity } from '@domain/entities/product.entity';
 export class ProductRepository implements IProductRepository {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Сортировка списка товаров; по умолчанию — по прибытию, новые сверху */
+    private buildOrderBy(params: ProductSearchParams): any {
+        const order = params.order === 'asc' ? 'asc' : 'desc';
+
+        switch (params.sortBy) {
+            case 'sku':
+                return { sku: order };
+            case 'boxCount':
+                return { boxCount: order };
+            case 'pairCount':
+                return { pairCount: order };
+            case 'priceRub':
+                return { priceRub: order };
+            case 'recommendedSalePrice':
+                return { recommendedSalePrice: order };
+            case 'totalRub':
+                return { totalRub: order };
+            case 'arrivedAt':
+                return { lastArrivedAt: { sort: order, nulls: 'last' } };
+            default:
+                return { createdAt: 'desc' };
+        }
+    }
+
     private toEntity(product: any): ProductEntity {
         return ProductEntity.create({
             id: product.id,
@@ -37,6 +61,7 @@ export class ProductRepository implements IProductRepository {
             isActive: product.isActive,
             createdAt: product.createdAt,
             updatedAt: product.updatedAt,
+            lastArrivedAt: product.lastArrivedAt,
         });
     }
 
@@ -88,7 +113,7 @@ export class ProductRepository implements IProductRepository {
         const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
-                orderBy: { createdAt: 'desc' },
+                orderBy: this.buildOrderBy(params),
                 skip,
                 take: limit,
             }),
@@ -142,7 +167,7 @@ export class ProductRepository implements IProductRepository {
         const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
-                orderBy: { createdAt: 'desc' },
+                orderBy: this.buildOrderBy(params),
                 skip,
                 take: limit,
             }),
@@ -203,7 +228,7 @@ export class ProductRepository implements IProductRepository {
         const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
-                orderBy: { createdAt: 'desc' },
+                orderBy: this.buildOrderBy(params),
                 skip,
                 take: limit,
             }),
@@ -259,6 +284,7 @@ export class ProductRepository implements IProductRepository {
                 accountId: data.accountId,
                 warehouseId: data.warehouseId,
                 isActive: data.isActive ?? true,
+                lastArrivedAt: data.lastArrivedAt,
             },
         });
 
@@ -290,6 +316,7 @@ export class ProductRepository implements IProductRepository {
                         accountId: item.accountId,
                         warehouseId: item.warehouseId,
                         isActive: item.isActive ?? true,
+                        lastArrivedAt: item.lastArrivedAt,
                     },
                 });
                 results.push(this.toEntity(product));
@@ -319,6 +346,7 @@ export class ProductRepository implements IProductRepository {
                 totalActualSale: data.totalActualSale,
                 barcode: data.barcode,
                 isActive: data.isActive,
+                lastArrivedAt: data.lastArrivedAt,
             },
         });
 
@@ -535,7 +563,7 @@ export class ProductRepository implements IProductRepository {
         const [items, total, agg] = await Promise.all([
             this.prisma.product.findMany({
                 where,
-                orderBy: { createdAt: 'desc' },
+                orderBy: this.buildOrderBy(params),
                 skip,
                 take: limit,
             }),

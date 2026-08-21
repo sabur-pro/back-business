@@ -143,6 +143,27 @@ export class AcceptShipmentUseCase {
                             totalRub: Math.round(newTotalRub * 100) / 100,
                             totalRecommendedSale: Number(existingProduct.recommendedSalePrice) * newPairCount,
                             totalActualSale: Number(existingProduct.actualSalePrice) * newPairCount,
+                            lastArrivedAt: now,
+                        },
+                    });
+
+                    // Журнал поступлений: партия пришла в существующий товар
+                    await tx.productArrival.create({
+                        data: {
+                            accountId: shipment.toAccountId,
+                            warehouseId: targetWarehouseId,
+                            productId: existingProduct.id,
+                            sku: item.sku,
+                            photo: item.photo,
+                            sizeRange: item.sizeRange,
+                            boxCount: item.boxCount,
+                            pairCount: item.pairCount,
+                            priceYuan: item.priceYuan,
+                            priceRub: item.priceRub,
+                            recommendedSalePrice: existingProduct.recommendedSalePrice,
+                            sourceType: 'SHIPMENT',
+                            sourceId: shipmentId,
+                            arrivedAt: now,
                         },
                     });
                 } else {
@@ -158,7 +179,7 @@ export class AcceptShipmentUseCase {
                         }
                     }
 
-                    await tx.product.create({
+                    const createdProduct = await tx.product.create({
                         data: {
                             sku: item.sku,
                             photo: item.photo,
@@ -175,6 +196,27 @@ export class AcceptShipmentUseCase {
                             totalActualSale: 0,
                             accountId: shipment.toAccountId,
                             warehouseId: targetWarehouseId,
+                            lastArrivedAt: now,
+                        },
+                    });
+
+                    // Журнал поступлений: новая позиция в магазине/складе
+                    await tx.productArrival.create({
+                        data: {
+                            accountId: shipment.toAccountId,
+                            warehouseId: targetWarehouseId,
+                            productId: createdProduct.id,
+                            sku: item.sku,
+                            photo: item.photo,
+                            sizeRange: item.sizeRange,
+                            boxCount: item.boxCount,
+                            pairCount: item.pairCount,
+                            priceYuan: item.priceYuan,
+                            priceRub: item.priceRub,
+                            recommendedSalePrice: sourceRecommendedPrice,
+                            sourceType: 'SHIPMENT',
+                            sourceId: shipmentId,
+                            arrivedAt: now,
                         },
                     });
                 }

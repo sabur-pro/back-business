@@ -3,6 +3,7 @@ import { PrismaModule } from '@infrastructure/database/prisma';
 import { ProductController } from '@presentation/controllers/product.controller';
 import {
     ProductRepository,
+    ProductArrivalRepository,
     PointRepository,
     UserRepository,
     PointMemberRepository,
@@ -15,6 +16,9 @@ import {
 import {
     PRODUCT_REPOSITORY,
 } from '@domain/repositories/product.repository.interface';
+import {
+    PRODUCT_ARRIVAL_REPOSITORY,
+} from '@domain/repositories/product-arrival.repository.interface';
 import {
     POINT_REPOSITORY,
 } from '@domain/repositories';
@@ -58,6 +62,10 @@ import {
         {
             provide: PRODUCT_REPOSITORY,
             useClass: ProductRepository,
+        },
+        {
+            provide: PRODUCT_ARRIVAL_REPOSITORY,
+            useClass: ProductArrivalRepository,
         },
         {
             provide: POINT_REPOSITORY,
