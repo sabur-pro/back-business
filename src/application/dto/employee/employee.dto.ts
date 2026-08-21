@@ -71,6 +71,12 @@ export class EmployeeResponseDto {
     @ApiProperty({ description: 'Может добавлять товары' })
     canAddProducts: boolean;
 
+    @ApiProperty({ description: 'Может редактировать товары' })
+    canEditProducts: boolean;
+
+    @ApiProperty({ description: 'Может удалять товары' })
+    canDeleteProducts: boolean;
+
     @ApiProperty({ description: 'Может управлять контрагентами' })
     canManageCounterparties: boolean;
 
@@ -102,6 +108,16 @@ export class UpdateEmployeePermissionsDto {
     @IsOptional()
     canAddProducts?: boolean;
 
+    @ApiPropertyOptional({ description: 'Может редактировать товары' })
+    @IsBoolean({ message: 'canEditProducts должен быть boolean' })
+    @IsOptional()
+    canEditProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может удалять товары' })
+    @IsBoolean({ message: 'canDeleteProducts должен быть boolean' })
+    @IsOptional()
+    canDeleteProducts?: boolean;
+
     @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
     @IsBoolean({ message: 'canManageCounterparties должен быть boolean' })
     @IsOptional()
@@ -126,4 +142,34 @@ export class PointAssignmentResponseDto {
 
     @ApiProperty({ description: 'Дата назначения' })
     createdAt: Date;
+}
+
+export class UpdateEmployeeDataDto {
+    @ApiPropertyOptional({ description: 'Имя', example: 'Иван' })
+    @IsString({ message: 'Имя должно быть строкой' })
+    @IsOptional()
+    @MaxLength(50)
+    firstName?: string;
+
+    @ApiPropertyOptional({ description: 'Фамилия', example: 'Петров' })
+    @IsString({ message: 'Фамилия должна быть строкой' })
+    @IsOptional()
+    @MaxLength(50)
+    lastName?: string;
+
+    @ApiPropertyOptional({ description: 'Email', example: 'employee@example.com' })
+    @IsEmail({}, { message: 'Некорректный email' })
+    @IsOptional()
+    email?: string;
+
+    @ApiPropertyOptional({ description: 'Новый пароль', example: 'newpassword123' })
+    @IsString({ message: 'Пароль должен быть строкой' })
+    @MinLength(6, { message: 'Пароль минимум 6 символов' })
+    @IsOptional()
+    password?: string;
+
+    @ApiPropertyOptional({ description: 'Телефон', example: '+7 999 123-45-67' })
+    @IsString({ message: 'Телефон должен быть строкой' })
+    @IsOptional()
+    phone?: string;
 }

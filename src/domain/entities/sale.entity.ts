@@ -27,6 +27,8 @@ export class SaleEntity {
         public readonly totalRecommended: number,
         public readonly totalActual: number,
         public readonly paidAmount: number,
+        public readonly cashAmount: number,
+        public readonly cardAmount: number,
         public readonly paymentMethod: PaymentMethod,
         public readonly profit: number,
         public readonly status: SaleStatus,
@@ -53,6 +55,8 @@ export class SaleEntity {
         totalRecommended: number;
         totalActual: number;
         paidAmount?: number;
+        cashAmount?: number;
+        cardAmount?: number;
         paymentMethod?: PaymentMethod;
         profit: number;
         status?: SaleStatus;
@@ -78,6 +82,8 @@ export class SaleEntity {
             Number(props.totalRecommended),
             Number(props.totalActual),
             Number(props.paidAmount ?? 0),
+            Number(props.cashAmount ?? 0),
+            Number(props.cardAmount ?? 0),
             props.paymentMethod ?? PaymentMethod.CASH,
             Number(props.profit),
             props.status ?? SaleStatus.COMPLETED,

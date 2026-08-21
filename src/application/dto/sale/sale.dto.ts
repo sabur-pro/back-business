@@ -8,6 +8,7 @@ import {
     IsArray,
     IsEnum,
     Min,
+    Matches,
     ValidateNested,
     ArrayMinSize,
 } from 'class-validator';
@@ -38,6 +39,11 @@ export class CreateSaleItemDto {
     @Min(0, { message: 'Цена не может быть отрицательной' })
     @Type(() => Number)
     actualSalePrice: number;
+
+    @ApiPropertyOptional({ description: 'ID партии поступления, из которой продаётся товар', example: 'uuid' })
+    @IsString({ message: 'ID партии должен быть строкой' })
+    @IsOptional()
+    arrivalId?: string;
 }
 
 export class CreateSaleDto {
@@ -63,10 +69,35 @@ export class CreateSaleDto {
     @IsOptional()
     paymentMethod?: string;
 
+    @ApiPropertyOptional({ description: 'Сумма оплаты наличными', example: 3000 })
+    @IsNumber({}, { message: 'Сумма наличными должна быть числом' })
+    @Min(0, { message: 'Сумма не может быть отрицательной' })
+    @IsOptional()
+    @Type(() => Number)
+    cashAmount?: number;
+
+    @ApiPropertyOptional({ description: 'Сумма оплаты картой', example: 2000 })
+    @IsNumber({}, { message: 'Сумма картой должна быть числом' })
+    @Min(0, { message: 'Сумма не может быть отрицательной' })
+    @IsOptional()
+    @Type(() => Number)
+    cardAmount?: number;
+
     @ApiPropertyOptional({ description: 'Примечание' })
     @IsString({ message: 'Примечание должно быть строкой' })
     @IsOptional()
     note?: string;
+
+    @ApiPropertyOptional({ description: 'День поступления, за который оформлена продажа, YYYY-MM-DD' })
+    @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата должна быть в формате YYYY-MM-DD' })
+    @IsOptional()
+    arrivalDate?: string;
+
+    @ApiPropertyOptional({ description: 'Смещение часового пояса клиента в минутах (МСК = 180)', example: 180 })
+    @IsInt({ message: 'Смещение часового пояса должно быть целым числом' })
+    @IsOptional()
+    @Type(() => Number)
+    tzOffset?: number;
 
     @ApiProperty({ description: 'Товары для продажи', type: [CreateSaleItemDto] })
     @IsArray({ message: 'items должен быть массивом' })
@@ -187,6 +218,12 @@ export class SaleResponseDto {
 
     @ApiProperty({ description: 'Тип оплаты' })
     paymentMethod: string;
+
+    @ApiProperty({ description: 'Оплата наличными' })
+    cashAmount: number;
+
+    @ApiProperty({ description: 'Оплата картой' })
+    cardAmount: number;
 
     @ApiProperty({ description: 'Прибыль' })
     profit: number;

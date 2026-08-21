@@ -3,16 +3,22 @@ import { PrismaModule } from '@infrastructure/database/prisma';
 import { ProductController } from '@presentation/controllers/product.controller';
 import {
     ProductRepository,
+    ProductArrivalRepository,
     PointRepository,
     UserRepository,
     PointMemberRepository,
     AccountRepository,
     WarehouseRepository,
     CounterpartyRepository,
+    AuditLogRepository,
+    OrgSettingsRepository,
 } from '@infrastructure/database/repositories';
 import {
     PRODUCT_REPOSITORY,
 } from '@domain/repositories/product.repository.interface';
+import {
+    PRODUCT_ARRIVAL_REPOSITORY,
+} from '@domain/repositories/product-arrival.repository.interface';
 import {
     POINT_REPOSITORY,
 } from '@domain/repositories';
@@ -32,11 +38,20 @@ import {
     COUNTERPARTY_REPOSITORY,
 } from '@domain/repositories/counterparty.repository.interface';
 import {
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
+import {
+    ORG_SETTINGS_REPOSITORY,
+} from '@domain/repositories/org-settings.repository.interface';
+import {
     CreateProductUseCase,
     GetProductsUseCase,
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    CheckExistingSkusUseCase,
+    RestoreProductUseCase,
+    TrackProductUseCase,
 } from '@application/use-cases/product';
 
 @Module({
@@ -47,6 +62,10 @@ import {
         {
             provide: PRODUCT_REPOSITORY,
             useClass: ProductRepository,
+        },
+        {
+            provide: PRODUCT_ARRIVAL_REPOSITORY,
+            useClass: ProductArrivalRepository,
         },
         {
             provide: POINT_REPOSITORY,
@@ -72,12 +91,23 @@ import {
             provide: COUNTERPARTY_REPOSITORY,
             useClass: CounterpartyRepository,
         },
+        {
+            provide: AUDIT_LOG_REPOSITORY,
+            useClass: AuditLogRepository,
+        },
+        {
+            provide: ORG_SETTINGS_REPOSITORY,
+            useClass: OrgSettingsRepository,
+        },
         // Use Cases
         CreateProductUseCase,
         GetProductsUseCase,
         UpdateProductUseCase,
         DeleteProductUseCase,
         BatchCreateProductsUseCase,
+        CheckExistingSkusUseCase,
+        RestoreProductUseCase,
+        TrackProductUseCase,
     ],
     exports: [PRODUCT_REPOSITORY],
 })

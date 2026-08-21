@@ -8,6 +8,7 @@ import {
     WarehouseRepository,
     UserRepository,
     AccountRepository,
+    AuditLogRepository,
 } from '@infrastructure/database/repositories';
 import {
     SHIPMENT_REPOSITORY,
@@ -28,9 +29,13 @@ import {
     ACCOUNT_REPOSITORY,
 } from '@domain/repositories/account.repository.interface';
 import {
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
+import {
     CreateShipmentUseCase,
     AcceptShipmentUseCase,
     CancelShipmentUseCase,
+    DeleteShipmentUseCase,
     GetShipmentsUseCase,
 } from '@application/use-cases/shipment';
 
@@ -63,10 +68,15 @@ import {
             provide: ACCOUNT_REPOSITORY,
             useClass: AccountRepository,
         },
+        {
+            provide: AUDIT_LOG_REPOSITORY,
+            useClass: AuditLogRepository,
+        },
         // Use Cases
         CreateShipmentUseCase,
         AcceptShipmentUseCase,
         CancelShipmentUseCase,
+        DeleteShipmentUseCase,
         GetShipmentsUseCase,
     ],
 })

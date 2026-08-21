@@ -9,6 +9,7 @@ import {
     UserRepository,
     CounterpartyRepository,
     CashRegisterRepository,
+    AccountRepository, // Added AccountRepository
 } from '@infrastructure/database/repositories';
 import {
     SALE_REPOSITORY,
@@ -31,6 +32,9 @@ import {
 import {
     CASH_REGISTER_REPOSITORY,
 } from '@domain/repositories/cash-register.repository.interface';
+import {
+    ACCOUNT_REPOSITORY, // Added ACCOUNT_REPOSITORY
+} from '@domain/repositories/account.repository.interface';
 import {
     CreateSaleUseCase,
     GetSalesUseCase,
@@ -59,10 +63,6 @@ import {
             useClass: PointRepository,
         },
         {
-            provide: USER_REPOSITORY,
-            useClass: UserRepository,
-        },
-        {
             provide: COUNTERPARTY_REPOSITORY,
             useClass: CounterpartyRepository,
         },
@@ -70,10 +70,26 @@ import {
             provide: CASH_REGISTER_REPOSITORY,
             useClass: CashRegisterRepository,
         },
+        {
+            provide: USER_REPOSITORY,
+            useClass: UserRepository,
+        },
+        {
+            provide: ACCOUNT_REPOSITORY,
+            useClass: AccountRepository,
+        },
         // Use Cases
         CreateSaleUseCase,
         GetSalesUseCase,
         CancelSaleUseCase,
+    ],
+    exports: [
+        CreateSaleUseCase,
+        GetSalesUseCase,
+        CancelSaleUseCase,
+        SALE_REPOSITORY,
+        USER_REPOSITORY, // Added USER_REPOSITORY to exports
+        ACCOUNT_REPOSITORY, // Added ACCOUNT_REPOSITORY to exports
     ],
 })
 export class SaleModule { }

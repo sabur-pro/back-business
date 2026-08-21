@@ -7,6 +7,14 @@ export interface TokenPayload {
     sub: string;
     email: string;
     role: string;
+    // Признак «сессии девелопера под организатором» и id самого девелопера
+    dev?: boolean;
+    devId?: string;
+}
+
+export interface ImpersonationClaims {
+    dev: boolean;
+    devId: string;
 }
 
 export interface TokenPair {
@@ -15,8 +23,8 @@ export interface TokenPair {
 }
 
 export interface IJwtTokenService {
-    generateTokenPair(userId: string, email: string, role: string): Promise<TokenPair>;
-    generateAccessToken(userId: string, email: string, role: string): Promise<string>;
+    generateTokenPair(userId: string, email: string, role: string, impersonation?: ImpersonationClaims): Promise<TokenPair>;
+    generateAccessToken(userId: string, email: string, role: string, impersonation?: ImpersonationClaims): Promise<string>;
     generateRefreshToken(): string;
     verifyAccessToken(token: string): Promise<TokenPayload>;
     getRefreshTokenExpirationDate(): Date;
@@ -31,21 +39,26 @@ export class JwtTokenService implements IJwtTokenService {
         private readonly configService: ConfigService,
     ) { }
 
-    async generateTokenPair(userId: string, email: string, role: string): Promise<TokenPair> {
+    async generateTokenPair(userId: string, email: string, role: string, impersonation?: ImpersonationClaims): Promise<TokenPair> {
         const [accessToken, refreshToken] = await Promise.all([
-            this.generateAccessToken(userId, email, role),
+            this.generateAccessToken(userId, email, role, impersonation),
             Promise.resolve(this.generateRefreshToken()),
         ]);
 
         return { accessToken, refreshToken };
     }
 
-    async generateAccessToken(userId: string, email: string, role: string): Promise<string> {
+    async generateAccessToken(userId: string, email: string, role: string, impersonation?: ImpersonationClaims): Promise<string> {
         const payload: TokenPayload = {
             sub: userId,
             email: email,
             role: role,
         };
+
+        if (impersonation?.dev) {
+            payload.dev = true;
+            payload.devId = impersonation.devId;
+        }
 
         return this.jwtService.signAsync(payload);
     }

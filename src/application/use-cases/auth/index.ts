@@ -3,3 +3,5 @@ export * from './login.use-case';
 export * from './refresh-token.use-case';
 export * from './logout.use-case';
 export * from './get-me.use-case';
+export * from './list-organizers.use-case';
+export * from './act-as-organizer.use-case';

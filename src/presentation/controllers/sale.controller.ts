@@ -78,6 +78,16 @@ export class SaleController {
         return this.getSalesUseCase.executeByPointId(pointId, query);
     }
 
+    @Get('summary')
+    @ApiOperation({ summary: 'Получить продажи за период (день, неделя, месяц, год)' })
+    @ApiResponse({ status: 200, description: 'Суммы продаж' })
+    async getSummary(
+        @CurrentUser('id') userId: string,
+        @Query('period') period: string,
+    ) {
+        return this.getSalesUseCase.executeSalesSummary(userId, period || 'day');
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Получить продажу по ID' })
     @ApiResponse({ status: 200, description: 'Продажа', type: SaleResponseDto })
@@ -94,4 +104,5 @@ export class SaleController {
     async cancel(@Param('id') id: string): Promise<SaleResponseDto> {
         return this.cancelSaleUseCase.execute(id);
     }
+
 }

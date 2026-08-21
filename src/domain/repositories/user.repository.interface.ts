@@ -12,6 +12,8 @@ export interface CreateUserData {
     canReceiveShipment?: boolean;
     canSell?: boolean;
     canAddProducts?: boolean;
+    canEditProducts?: boolean;
+    canDeleteProducts?: boolean;
     canManageCounterparties?: boolean;
     isActive?: boolean;
 }
@@ -28,6 +30,8 @@ export interface UpdateUserData {
     canReceiveShipment?: boolean;
     canSell?: boolean;
     canAddProducts?: boolean;
+    canEditProducts?: boolean;
+    canDeleteProducts?: boolean;
     canManageCounterparties?: boolean;
     isActive?: boolean;
 }
@@ -40,6 +44,7 @@ export interface IUserRepository {
     findById(id: string): Promise<UserEntity | null>;
     findByEmail(email: string): Promise<UserEntity | null>;
     findByAccountId(accountId: string): Promise<UserEntity[]>;
+    findByRole(role: UserRole): Promise<UserEntity[]>;
     create(data: CreateUserData): Promise<UserEntity>;
     update(id: string, data: UpdateUserData): Promise<UserEntity>;
     delete(id: string): Promise<void>;

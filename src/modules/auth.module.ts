@@ -19,6 +19,8 @@ import {
     RefreshTokenUseCase,
     LogoutUseCase,
     GetMeUseCase,
+    ListOrganizersUseCase,
+    ActAsOrganizerUseCase,
 } from '@/application/use-cases/auth';
 
 // Repositories
@@ -92,6 +94,8 @@ import { JwtTokenService, JWT_TOKEN_SERVICE } from '@/infrastructure/services/jw
         RefreshTokenUseCase,
         LogoutUseCase,
         GetMeUseCase,
+        ListOrganizersUseCase,
+        ActAsOrganizerUseCase,
     ],
     exports: [USER_REPOSITORY, ACCOUNT_REPOSITORY],
 })

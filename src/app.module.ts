@@ -12,6 +12,7 @@ import { ShopModule } from './modules/shop.module';
 import { SaleModule } from './modules/sale.module';
 import { CounterpartyModule } from './modules/counterparty.module';
 import { CashRegisterModule } from './modules/cash-register.module';
+import { AuditModule } from './modules/audit.module';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 
 @Module({
@@ -33,8 +34,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
         SaleModule,
         CounterpartyModule,
         CashRegisterModule,
+        AuditModule,
     ],
 })
 export class AppModule { }
-
-

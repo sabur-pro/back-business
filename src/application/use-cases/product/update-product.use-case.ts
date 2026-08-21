@@ -15,7 +15,12 @@ import {
     IPointMemberRepository,
     POINT_MEMBER_REPOSITORY,
 } from '@domain/repositories/point-member.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { ProductEntity } from '@domain/entities/product.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { UserRole } from '@domain/entities/user.entity';
 import { UpdateProductDto } from '@application/dto/product';
 
@@ -30,6 +35,8 @@ export class UpdateProductUseCase {
         private readonly userRepository: IUserRepository,
         @Inject(POINT_MEMBER_REPOSITORY)
         private readonly pointMemberRepository: IPointMemberRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
     ) { }
 
     async execute(userId: string, productId: string, dto: UpdateProductDto): Promise<ProductEntity> {
@@ -54,7 +61,35 @@ export class UpdateProductUseCase {
             }
         }
 
-        return this.productRepository.update(productId, {
+        // Capture old data before update
+        const oldData: Record<string, any> = {};
+        const newData: Record<string, any> = {};
+
+        const fieldsToTrack = [
+            'sku', 'photoOriginal', 'photo', 'sizeRange', 'boxCount', 'pairCount',
+            'priceYuan', 'priceRub', 'totalYuan', 'totalRub', 'barcode', 'isActive',
+            'recommendedSalePrice', 'totalRecommendedSale', 'actualSalePrice', 'totalActualSale',
+        ] as const;
+
+        for (const field of fieldsToTrack) {
+            if ((dto as any)[field] !== undefined && (dto as any)[field] !== (product as any)[field]) {
+                oldData[field] = (product as any)[field];
+                newData[field] = (dto as any)[field];
+            }
+        }
+
+        // Итоговые суммы продажи считаем от количества пар, если клиент прислал только цену
+        const pairCount = dto.pairCount ?? product.pairCount;
+        const totalRecommendedSale = dto.totalRecommendedSale
+            ?? (dto.recommendedSalePrice !== undefined
+                ? Math.round(dto.recommendedSalePrice * pairCount * 100) / 100
+                : undefined);
+        const totalActualSale = dto.totalActualSale
+            ?? (dto.actualSalePrice !== undefined
+                ? Math.round(dto.actualSalePrice * pairCount * 100) / 100
+                : undefined);
+
+        const updatedProduct = await this.productRepository.update(productId, {
             sku: dto.sku,
             photoOriginal: dto.photoOriginal,
             photo: dto.photo,
@@ -65,9 +100,37 @@ export class UpdateProductUseCase {
             priceRub: dto.priceRub,
             totalYuan: dto.totalYuan,
             totalRub: dto.totalRub,
+            recommendedSalePrice: dto.recommendedSalePrice,
+            totalRecommendedSale,
+            actualSalePrice: dto.actualSalePrice,
+            totalActualSale,
             barcode: dto.barcode,
             isActive: dto.isActive,
         });
+
+        const hasPriceChanges = dto.priceYuan !== undefined || dto.priceRub !== undefined;
+        if (hasPriceChanges) {
+            const currentSku = dto.sku ?? product.sku;
+            await this.productRepository.updatePricesBySku(currentSku, product.accountId, {
+                priceYuan: dto.priceYuan,
+                priceRub: dto.priceRub,
+            });
+        }
+
+        // Record audit log if there are actual changes
+        if (Object.keys(oldData).length > 0) {
+            await this.auditLogRepository.create({
+                action: AuditAction.PRODUCT_UPDATED,
+                entityType: 'PRODUCT',
+                entityId: productId,
+                userId,
+                accountId: product.accountId,
+                oldData,
+                newData,
+            });
+        }
+
+        return updatedProduct;
     }
 
     private async checkPermissions(
@@ -93,8 +156,8 @@ export class UpdateProductUseCase {
             }
 
             const user = await this.userRepository.findById(userId);
-            if (!user || !user.canAddProducts) {
-                throw new ForbiddenException('Организатор не предоставил право управления товарами');
+            if (!user || !user.canEditProducts) {
+                throw new ForbiddenException('Организатор не предоставил право редактирования товаров');
             }
             return;
         }

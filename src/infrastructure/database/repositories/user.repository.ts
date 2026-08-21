@@ -45,6 +45,18 @@ export class UserRepository implements IUserRepository {
         }));
     }
 
+    async findByRole(role: UserRole): Promise<UserEntity[]> {
+        const users = await this.prisma.user.findMany({
+            where: { role },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        return users.map((u) => UserEntity.create({
+            ...u,
+            role: u.role as UserRole,
+        }));
+    }
+
     async create(data: CreateUserData): Promise<UserEntity> {
         const user = await this.prisma.user.create({
             data: {
@@ -58,6 +70,10 @@ export class UserRepository implements IUserRepository {
                 canCreateShipment: data.canCreateShipment ?? false,
                 canReceiveShipment: data.canReceiveShipment ?? false,
                 canSell: data.canSell ?? false,
+                canAddProducts: data.canAddProducts ?? false,
+                canEditProducts: data.canEditProducts ?? false,
+                canDeleteProducts: data.canDeleteProducts ?? false,
+                canManageCounterparties: data.canManageCounterparties ?? false,
                 isActive: data.isActive ?? true,
             },
         });
@@ -83,6 +99,8 @@ export class UserRepository implements IUserRepository {
                 ...(data.canReceiveShipment !== undefined && { canReceiveShipment: data.canReceiveShipment }),
                 ...(data.canSell !== undefined && { canSell: data.canSell }),
                 ...(data.canAddProducts !== undefined && { canAddProducts: data.canAddProducts }),
+                ...(data.canEditProducts !== undefined && { canEditProducts: data.canEditProducts }),
+                ...(data.canDeleteProducts !== undefined && { canDeleteProducts: data.canDeleteProducts }),
                 ...(data.canManageCounterparties !== undefined && { canManageCounterparties: data.canManageCounterparties }),
                 ...(data.isActive !== undefined && { isActive: data.isActive }),
             },

@@ -64,6 +64,8 @@ export class CreateEmployeeUseCase {
             canReceiveShipment: employee.canReceiveShipment,
             canSell: employee.canSell,
             canAddProducts: employee.canAddProducts,
+            canEditProducts: employee.canEditProducts,
+            canDeleteProducts: employee.canDeleteProducts,
             canManageCounterparties: employee.canManageCounterparties,
             isActive: employee.isActive,
             createdAt: employee.createdAt,

@@ -24,12 +24,20 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
             canAddProducts: settings.canAddProducts,
+            hardDeleteProducts: settings.hardDeleteProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });
     }
 
     async upsert(accountId: string, data: UpdateOrgSettingsData): Promise<OrgSettingsEntity> {
+        const updateData: any = {};
+        if (data.canAddEmployees !== undefined) updateData.canAddEmployees = data.canAddEmployees;
+        if (data.canAddPoints !== undefined) updateData.canAddPoints = data.canAddPoints;
+        if (data.canAddWarehouses !== undefined) updateData.canAddWarehouses = data.canAddWarehouses;
+        if (data.canAddProducts !== undefined) updateData.canAddProducts = data.canAddProducts;
+        if (data.hardDeleteProducts !== undefined) updateData.hardDeleteProducts = data.hardDeleteProducts;
+
         const settings = await this.prisma.orgSettings.upsert({
             where: { accountId },
             create: {
@@ -38,13 +46,9 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
                 canAddPoints: data.canAddPoints ?? true,
                 canAddWarehouses: data.canAddWarehouses ?? true,
                 canAddProducts: data.canAddProducts ?? false,
+                hardDeleteProducts: data.hardDeleteProducts ?? false,
             },
-            update: {
-                canAddEmployees: data.canAddEmployees,
-                canAddPoints: data.canAddPoints,
-                canAddWarehouses: data.canAddWarehouses,
-                canAddProducts: data.canAddProducts,
-            },
+            update: updateData,
         });
 
         return OrgSettingsEntity.create({
@@ -54,6 +58,7 @@ export class OrgSettingsRepository implements IOrgSettingsRepository {
             canAddPoints: settings.canAddPoints,
             canAddWarehouses: settings.canAddWarehouses,
             canAddProducts: settings.canAddProducts,
+            hardDeleteProducts: settings.hardDeleteProducts,
             createdAt: settings.createdAt,
             updatedAt: settings.updatedAt,
         });

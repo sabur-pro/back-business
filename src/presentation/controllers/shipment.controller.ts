@@ -3,9 +3,12 @@ import {
     Get,
     Post,
     Put,
+    Delete,
     Body,
     Param,
     Query,
+    HttpCode,
+    HttpStatus,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -13,7 +16,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CurrentUser } from '../decorators';
+import { CurrentUser, CurrentUserData } from '../decorators';
 import {
     CreateShipmentDto,
     AcceptShipmentDto,
@@ -25,6 +28,7 @@ import {
     CreateShipmentUseCase,
     AcceptShipmentUseCase,
     CancelShipmentUseCase,
+    DeleteShipmentUseCase,
     GetShipmentsUseCase,
 } from '@application/use-cases/shipment';
 
@@ -36,6 +40,7 @@ export class ShipmentController {
         private readonly createShipmentUseCase: CreateShipmentUseCase,
         private readonly acceptShipmentUseCase: AcceptShipmentUseCase,
         private readonly cancelShipmentUseCase: CancelShipmentUseCase,
+        private readonly deleteShipmentUseCase: DeleteShipmentUseCase,
         private readonly getShipmentsUseCase: GetShipmentsUseCase,
     ) { }
 
@@ -77,6 +82,20 @@ export class ShipmentController {
         @Param('id') id: string,
     ): Promise<ShipmentResponseDto> {
         return this.cancelShipmentUseCase.execute(userId, id) as any;
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Удалить заявку (только девелопер — с откатом товара)' })
+    @ApiResponse({ status: 200, description: 'Заявка удалена' })
+    @ApiResponse({ status: 400, description: 'По заявке есть долг' })
+    @ApiResponse({ status: 403, description: 'Нет доступа (только девелопер)' })
+    @ApiResponse({ status: 404, description: 'Заявка не найдена' })
+    async delete(
+        @CurrentUser() user: CurrentUserData,
+        @Param('id') id: string,
+    ): Promise<{ success: true }> {
+        return this.deleteShipmentUseCase.execute(user.id, id, user.dev === true);
     }
 
     @Get('my')

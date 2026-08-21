@@ -4,6 +4,7 @@ export interface CreateRefreshTokenData {
     token: string;
     userId: string;
     expiresAt: Date;
+    impersonatorId?: string | null;
 }
 
 /**

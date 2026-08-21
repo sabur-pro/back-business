@@ -22,6 +22,10 @@ export class UpdateOrgSettingsDto {
     @IsOptional()
     canAddProducts?: boolean;
 
+    @ApiProperty({ description: 'Жёсткое удаление товаров (полное удаление из БД)', required: false })
+    @IsBoolean()
+    @IsOptional()
+    hardDeleteProducts?: boolean;
 }
 
 export class OrgSettingsResponseDto {
@@ -42,4 +46,7 @@ export class OrgSettingsResponseDto {
 
     @ApiProperty()
     canAddProducts: boolean;
+
+    @ApiProperty()
+    hardDeleteProducts: boolean;
 }

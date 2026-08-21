@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mybusiness-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-warehouse_db}
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mybusiness-internal
+
+  prisma-studio:
+    image: back-business-prisma-studio:latest
+    container_name: mybusiness-prisma-studio
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@mybusiness-postgres:5432/${POSTGRES_DB:-warehouse_db}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mybusiness-internal
+
+volumes:
+  postgres_data:
+
+networks:
+  mybusiness-internal:
+    driver: bridge

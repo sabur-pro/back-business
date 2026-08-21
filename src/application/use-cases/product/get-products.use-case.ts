@@ -1,4 +1,4 @@
-import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
     IProductRepository,
     PRODUCT_REPOSITORY,
@@ -57,6 +57,29 @@ export class GetProductsUseCase {
         }
 
         return [];
+    }
+
+    async executeById(userId: string, productId: string): Promise<ProductEntity> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new ForbiddenException('Пользователь не найден');
+        }
+
+        const product = await this.productRepository.findById(productId);
+        if (!product) {
+            throw new NotFoundException('Товар не найден');
+        }
+
+        if (user.role === UserRole.ORGANIZER) {
+            const accounts = await this.accountRepository.findByOwnerId(userId);
+            if (!accounts.some((a) => a.id === product.accountId)) {
+                throw new ForbiddenException('Нет доступа к данному товару');
+            }
+        } else if (user.accountId !== product.accountId) {
+            throw new ForbiddenException('Нет доступа к данному товару');
+        }
+
+        return product;
     }
 
     async executePaginated(userId: string, accountId: string, params: ProductSearchParams): Promise<PaginatedProducts> {
@@ -140,7 +163,24 @@ export class GetProductsUseCase {
         }
 
         if (accountIds.length === 0) {
-            return { uniqueProducts: 0, totalBoxes: 0, totalPairs: 0 };
+            return {
+                totalProducts: 0,
+                uniqueProducts: 0,
+                totalBoxes: 0,
+                totalPairs: 0,
+                totalYuan: 0,
+                totalCostRub: 0,
+                totalRecommendedSale: 0,
+                differenceRubRecommended: 0,
+                inTransitProducts: 0,
+                inTransitYuan: 0,
+                inTransitRub: 0,
+                byCategory: {
+                    warehouseOnly: null,
+                    shopOnly: null,
+                    mixed: null,
+                },
+            };
         }
 
         return this.productRepository.getStatsByAccountIds(accountIds);
@@ -161,7 +201,7 @@ export class GetProductsUseCase {
         }
 
         if (accountIds.length === 0) {
-            return { items: [], total: 0, page: 1, limit: params.limit ?? 20, totalPages: 0 };
+            return { items: [], total: 0, page: 1, limit: params.limit ?? 20, totalPages: 0, totalPairs: 0, totalBoxes: 0 };
         }
 
         return this.productRepository.findAllByUserPaginated(accountIds, params);

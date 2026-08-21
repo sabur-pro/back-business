@@ -140,7 +140,7 @@ export class CashRegisterSummaryResponseDto {
     totalOwedByClients: number;
 }
 
-// ==================== TRANSFER TO SAFE ====================
+// ==================== TRANSFER FUNDS ====================
 
 export class TransferToSafeDto {
     @ApiProperty({ description: 'ID магазина', example: 'uuid' })
@@ -158,6 +158,29 @@ export class TransferToSafeDto {
     @IsString()
     @IsNotEmpty()
     source: string;
+}
+
+export class TransferFundsDto {
+    @ApiProperty({ description: 'ID магазина', example: 'uuid' })
+    @IsString({ message: 'ID магазина должен быть строкой' })
+    @IsNotEmpty({ message: 'ID магазина обязателен' })
+    shopId: string;
+
+    @ApiProperty({ description: 'Сумма перевода', example: 5000 })
+    @IsNumber({}, { message: 'Сумма должна быть числом' })
+    @Min(0.01, { message: 'Сумма должна быть больше 0' })
+    @Type(() => Number)
+    amount: number;
+
+    @ApiProperty({ description: 'Откуда', enum: ['CASH', 'CARD', 'SAFE'], example: 'CASH' })
+    @IsString()
+    @IsNotEmpty()
+    from: string;
+
+    @ApiProperty({ description: 'Куда', enum: ['CASH', 'CARD', 'SAFE'], example: 'SAFE' })
+    @IsString()
+    @IsNotEmpty()
+    to: string;
 }
 
 // ==================== CREATE EXPENSE ====================

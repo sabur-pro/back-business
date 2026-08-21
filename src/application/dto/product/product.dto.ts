@@ -11,6 +11,7 @@ import {
     IsArray,
     ValidateNested,
     ArrayMinSize,
+    IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -310,6 +311,15 @@ export class BatchProductItemDto {
     @IsOptional()
     @MaxLength(255, { message: 'Баркод не более 255 символов' })
     barcode?: string;
+
+    @ApiPropertyOptional({
+        description: 'Режим прихода: create — создать новый товар, restock — повторный приход (пополнить существующий)',
+        example: 'create',
+        enum: ['create', 'restock'],
+    })
+    @IsIn(['create', 'restock'], { message: 'mode должен быть create или restock' })
+    @IsOptional()
+    mode?: 'create' | 'restock';
 }
 
 export class BatchCreateProductsDto {
@@ -401,6 +411,9 @@ export class ProductResponseDto {
     @ApiProperty({ description: 'Активен ли товар' })
     isActive: boolean;
 
+    @ApiPropertyOptional({ description: 'Дата последнего поступления', nullable: true })
+    lastArrivedAt?: Date | null;
+
     @ApiProperty({ description: 'Дата создания' })
     createdAt: Date;
 
@@ -409,11 +422,54 @@ export class ProductResponseDto {
 }
 
 export class BatchCreateProductsResponseDto {
-    @ApiProperty({ description: 'Созданные товары', type: [ProductResponseDto] })
+    @ApiProperty({ description: 'Обработанные товары (созданные и пополненные)', type: [ProductResponseDto] })
     products: ProductResponseDto[];
 
-    @ApiProperty({ description: 'Количество созданных товаров', example: 3 })
+    @ApiProperty({ description: 'Общее количество обработанных позиций', example: 3 })
     count: number;
+
+    @ApiProperty({ description: 'Количество созданных новых товаров', example: 2 })
+    createdCount: number;
+
+    @ApiProperty({ description: 'Количество пополненных (повторный приход) товаров', example: 1 })
+    restockedCount: number;
+}
+
+export class CheckExistingSkusDto {
+    @ApiProperty({ description: 'ID точки', example: 'uuid' })
+    @IsString({ message: 'ID точки должен быть строкой' })
+    @IsNotEmpty({ message: 'ID точки обязателен' })
+    pointId: string;
+
+    @ApiProperty({ description: 'Список артикулов для проверки', example: ['A393-1', 'B120'] })
+    @IsArray({ message: 'skus должен быть массивом' })
+    @IsString({ each: true, message: 'Артикул должен быть строкой' })
+    skus: string[];
+}
+
+export class ExistingSkuDto {
+    @ApiProperty({ description: 'Артикул', example: 'A393-1' })
+    sku: string;
+
+    @ApiProperty({ description: 'ID существующего товара' })
+    productId: string;
+
+    @ApiProperty({ description: 'Название склада, где найден товар', example: 'Мужской' })
+    warehouseName: string;
+
+    @ApiProperty({ description: 'Текущее количество коробок', example: 10 })
+    boxCount: number;
+
+    @ApiProperty({ description: 'Текущее количество пар', example: 80 })
+    pairCount: number;
+
+    @ApiProperty({ description: 'Текущая цена в рублях', example: 2500 })
+    priceRub: number;
+}
+
+export class CheckExistingSkusResponseDto {
+    @ApiProperty({ description: 'Найденные существующие товары', type: [ExistingSkuDto] })
+    existing: ExistingSkuDto[];
 }
 
 export class ProductSearchQueryDto {
@@ -441,6 +497,22 @@ export class ProductSearchQueryDto {
     @IsOptional()
     @Type(() => Boolean)
     zeroBoxes?: boolean;
+
+    @ApiPropertyOptional({
+        description: 'Поле сортировки',
+        enum: ['arrivedAt', 'sku', 'boxCount', 'pairCount', 'priceRub', 'recommendedSalePrice', 'totalRub'],
+        example: 'arrivedAt',
+    })
+    @IsIn(['arrivedAt', 'sku', 'boxCount', 'pairCount', 'priceRub', 'recommendedSalePrice', 'totalRub'], {
+        message: 'Недопустимое поле сортировки',
+    })
+    @IsOptional()
+    sortBy?: string;
+
+    @ApiPropertyOptional({ description: 'Направление сортировки', enum: ['asc', 'desc'], example: 'desc' })
+    @IsIn(['asc', 'desc'], { message: 'Направление сортировки: asc или desc' })
+    @IsOptional()
+    order?: string;
 }
 
 export class PaginatedProductsResponseDto {
@@ -458,4 +530,10 @@ export class PaginatedProductsResponseDto {
 
     @ApiProperty({ description: 'Всего страниц', example: 5 })
     totalPages: number;
+
+    @ApiProperty({ description: 'Общее количество пар (по всем страницам)', example: 500 })
+    totalPairs: number;
+
+    @ApiProperty({ description: 'Общее количество коробок (по всем страницам)', example: 60 })
+    totalBoxes: number;
 }

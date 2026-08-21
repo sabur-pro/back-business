@@ -25,8 +25,13 @@ import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { UserRole } from '@domain/entities/user.entity';
 import { ShipmentEntity } from '@domain/entities/shipment.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { CreateShipmentDto } from '@application/dto/shipment';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
@@ -43,6 +48,8 @@ export class CreateShipmentUseCase {
         private readonly warehouseRepository: IWarehouseRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: IUserRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -222,6 +229,23 @@ export class CreateShipmentUseCase {
             });
 
             return transfer;
+        });
+
+        // Record audit log
+        await this.auditLogRepository.create({
+            action: AuditAction.SHIPMENT_CREATED,
+            entityType: 'SHIPMENT',
+            entityId: shipment.id,
+            userId,
+            accountId: fromAccountId,
+            newData: {
+                number: shipment.number,
+                fromPointId: dto.fromPointId,
+                toPointId: dto.toPointId,
+                totalYuan: Math.round(totalYuan * 100) / 100,
+                totalRub: Math.round(totalRub * 100) / 100,
+                itemCount: itemsData.length,
+            },
         });
 
         return this.mapToEntity(shipment);

@@ -44,14 +44,25 @@ export class RefreshTokenUseCase {
         // Delete old refresh token
         await this.refreshTokenRepository.deleteByToken(refreshToken);
 
+        // Если это dev-сессия «под организатором» — сохраняем dev-признак,
+        // проверив, что девелопер всё ещё существует и активен.
+        let impersonation: { dev: boolean; devId: string } | undefined;
+        if (storedToken.impersonatorId) {
+            const developer = await this.userRepository.findById(storedToken.impersonatorId);
+            if (developer && developer.isActive && developer.isDeveloper) {
+                impersonation = { dev: true, devId: developer.id };
+            }
+        }
+
         // Generate new tokens
-        const tokenPair = await this.jwtTokenService.generateTokenPair(user.id, user.email, user.role);
+        const tokenPair = await this.jwtTokenService.generateTokenPair(user.id, user.email, user.role, impersonation);
 
         // Save new refresh token
         await this.refreshTokenRepository.create({
             token: tokenPair.refreshToken,
             userId: user.id,
             expiresAt: this.jwtTokenService.getRefreshTokenExpirationDate(),
+            impersonatorId: impersonation ? impersonation.devId : null,
         });
 
         return {

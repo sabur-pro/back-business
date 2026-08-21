@@ -40,6 +40,7 @@ import { CashTransactionType } from '@domain/entities/cash-transaction.entity';
 import { SaleEntity, PaymentMethod } from '@domain/entities/sale.entity';
 import { CreateSaleDto } from '@application/dto/sale';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
+import { dayRange } from '@application/use-cases/shop/arrival-day.helper';
 
 @Injectable()
 export class CreateSaleUseCase {
@@ -102,6 +103,31 @@ export class CreateSaleUseCase {
             }
         }
 
+        // 5.1 Validate arrivals (партии поступления) — суммарно по каждой партии
+        const requestedByArrival = new Map<string, { boxCount: number; pairCount: number }>();
+        for (const item of dto.items) {
+            if (!item.arrivalId) continue;
+            const acc = requestedByArrival.get(item.arrivalId) ?? { boxCount: 0, pairCount: 0 };
+            acc.boxCount += item.boxCount;
+            acc.pairCount += item.pairCount;
+            requestedByArrival.set(item.arrivalId, acc);
+        }
+
+        for (const [arrivalId, requested] of requestedByArrival) {
+            const arrival = await this.prisma.productArrival.findUnique({ where: { id: arrivalId } });
+            if (!arrival || arrival.warehouseId !== dto.shopId) {
+                throw new NotFoundException(`Партия поступления не найдена: ${arrivalId}`);
+            }
+
+            const remainderBoxes = arrival.boxCount - arrival.soldBoxes - arrival.returnedBoxes;
+            const remainderPairs = arrival.pairCount - arrival.soldPairs - arrival.returnedPairs;
+            if (requested.boxCount > remainderBoxes || requested.pairCount > remainderPairs) {
+                throw new BadRequestException(
+                    `Продажа по товару "${arrival.sku}" превышает остаток партии: запрошено ${requested.pairCount} пар, доступно ${remainderPairs}`,
+                );
+            }
+        }
+
         // 6. Validate products and calculate totals
         let totalYuan = 0;
         let totalRub = 0;
@@ -110,6 +136,7 @@ export class CreateSaleUseCase {
 
         const itemsData: Array<{
             productId: string;
+            arrivalId: string | null;
             sku: string;
             photo: string | null;
             sizeRange: string | null;
@@ -171,6 +198,7 @@ export class CreateSaleUseCase {
 
             itemsData.push({
                 productId: product.id,
+                arrivalId: item.arrivalId ?? null,
                 sku: product.sku,
                 photo: product.photo,
                 sizeRange: product.sizeRange,
@@ -190,13 +218,45 @@ export class CreateSaleUseCase {
 
         const totalProfit = Math.round((totalActual - totalRub) * 100) / 100;
 
-        // 7. Generate sale number
+        // 7. Resolve payment amounts (split support)
+        let cashAmount = dto.cashAmount ?? 0;
+        let cardAmount = dto.cardAmount ?? 0;
+
+        if (dto.cashAmount === undefined && dto.cardAmount === undefined) {
+            if (dto.paidAmount !== undefined) {
+                // Legacy fallback: paidAmount + paymentMethod
+                const pm = (dto.paymentMethod as PaymentMethod) ?? PaymentMethod.CASH;
+                if (pm === PaymentMethod.CARD) {
+                    cardAmount = dto.paidAmount;
+                } else {
+                    cashAmount = dto.paidAmount;
+                }
+            } else {
+                // Групповая продажа за день: оплата не указывается — вся сумма идёт в кассу наличными
+                cashAmount = Math.round(totalActual * 100) / 100;
+            }
+        }
+
+        const paidAmount = cashAmount + cardAmount;
+        const paymentMethod = cardAmount > 0 && cashAmount === 0
+            ? PaymentMethod.CARD
+            : PaymentMethod.CASH;
+
+        // Validate: debt requires a client
+        const roundedTotalActualCheck = Math.round(totalActual * 100) / 100;
+        if (paidAmount < roundedTotalActualCheck && !dto.clientId) {
+            throw new BadRequestException('Для оформления долга необходимо указать клиента');
+        }
+
+        // 8. Generate sale number
         const number = await this.saleRepository.generateNumber();
 
-        const paidAmount = dto.paidAmount ?? 0;
-        const paymentMethod = (dto.paymentMethod as PaymentMethod) ?? PaymentMethod.CASH;
+        // День поступления, за который оформлена продажа
+        const arrivalDate = dto.arrivalDate
+            ? dayRange(dto.arrivalDate, dto.tzOffset ?? 0).from
+            : null;
 
-        // 8. Create sale and subtract stock in a transaction
+        // 9. Create sale and subtract stock in a transaction
         const result = await this.prisma.$transaction(async (tx) => {
             // Subtract products from shop
             for (const item of dto.items) {
@@ -226,6 +286,17 @@ export class CreateSaleUseCase {
                 });
             }
 
+            // Списываем проданное с партий поступления
+            for (const [arrivalId, requested] of requestedByArrival) {
+                await tx.productArrival.update({
+                    where: { id: arrivalId },
+                    data: {
+                        soldBoxes: { increment: requested.boxCount },
+                        soldPairs: { increment: requested.pairCount },
+                    },
+                });
+            }
+
             // Create the sale record
             const sale = await tx.sale.create({
                 data: {
@@ -234,7 +305,10 @@ export class CreateSaleUseCase {
                     shopId: dto.shopId,
                     accountId,
                     clientId: dto.clientId ?? null,
+                    arrivalDate,
                     paymentMethod: paymentMethod as any,
+                    cashAmount,
+                    cardAmount,
                     totalYuan: Math.round(totalYuan * 100) / 100,
                     totalRub: Math.round(totalRub * 100) / 100,
                     totalRecommended: Math.round(totalRecommended * 100) / 100,
@@ -247,6 +321,7 @@ export class CreateSaleUseCase {
                     items: {
                         create: itemsData.map((item) => ({
                             productId: item.productId,
+                            arrivalId: item.arrivalId,
                             sku: item.sku,
                             photo: item.photo,
                             sizeRange: item.sizeRange,
@@ -275,7 +350,7 @@ export class CreateSaleUseCase {
             return sale;
         });
 
-        // 9. Update client counterparty balance if client specified
+        // 10. Update client counterparty balance if client specified
         const roundedTotalActual = Math.round(totalActual * 100) / 100;
         if (dto.clientId) {
             // Record goods sold to client
@@ -301,25 +376,31 @@ export class CreateSaleUseCase {
             }
         }
 
-        // 10. Update cash register with sale income (paidAmount goes to cash or card balance)
-        if (paidAmount > 0) {
-            const register = await this.cashRegisterRepository.findOrCreateByShopId(dto.shopId);
-            const txType = paymentMethod === PaymentMethod.CARD
-                ? CashTransactionType.SALE_INCOME_CARD
-                : CashTransactionType.SALE_INCOME;
+        // 11. Update cash register — separate transactions for cash and card
+        const register = await this.cashRegisterRepository.findOrCreateByShopId(dto.shopId);
+
+        if (cashAmount > 0) {
             await this.cashRegisterRepository.createTransaction({
                 cashRegisterId: register.id,
-                type: txType,
-                amount: paidAmount,
-                description: `Продажа ${number} (${paymentMethod === PaymentMethod.CARD ? 'карта' : 'наличные'})`,
+                type: CashTransactionType.SALE_INCOME,
+                amount: cashAmount,
+                description: `Продажа ${number} (наличные)`,
                 counterpartyId: dto.clientId ?? null,
                 relatedId: result.id,
             });
-            if (paymentMethod === PaymentMethod.CARD) {
-                await this.cashRegisterRepository.updateCardBalance(register.id, paidAmount);
-            } else {
-                await this.cashRegisterRepository.updateBalance(register.id, paidAmount);
-            }
+            await this.cashRegisterRepository.updateBalance(register.id, cashAmount);
+        }
+
+        if (cardAmount > 0) {
+            await this.cashRegisterRepository.createTransaction({
+                cashRegisterId: register.id,
+                type: CashTransactionType.SALE_INCOME_CARD,
+                amount: cardAmount,
+                description: `Продажа ${number} (карта)`,
+                counterpartyId: dto.clientId ?? null,
+                relatedId: result.id,
+            });
+            await this.cashRegisterRepository.updateCardBalance(register.id, cardAmount);
         }
 
         return this.saleRepository.findById(result.id) as Promise<SaleEntity>;

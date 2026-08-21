@@ -3,6 +3,7 @@ import {
     Post,
     Body,
     Get,
+    Param,
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import {
     RefreshTokenUseCase,
     LogoutUseCase,
     GetMeUseCase,
+    ListOrganizersUseCase,
+    ActAsOrganizerUseCase,
 } from '@/application/use-cases/auth';
 import {
     RegisterDto,
@@ -26,6 +29,7 @@ import {
     AuthResponseDto,
     TokenResponseDto,
     UserResponseDto,
+    OrganizerListItemDto,
 } from '@/application/dto/auth';
 import { Public } from '../decorators/public.decorator';
 import { CurrentUser, CurrentUserData } from '../decorators/current-user.decorator';
@@ -39,6 +43,8 @@ export class AuthController {
         private readonly refreshTokenUseCase: RefreshTokenUseCase,
         private readonly logoutUseCase: LogoutUseCase,
         private readonly getMeUseCase: GetMeUseCase,
+        private readonly listOrganizersUseCase: ListOrganizersUseCase,
+        private readonly actAsOrganizerUseCase: ActAsOrganizerUseCase,
     ) { }
 
     @Public()
@@ -112,7 +118,31 @@ export class AuthController {
         type: UserResponseDto,
     })
     @ApiResponse({ status: 401, description: 'Не авторизован' })
-    async getMe(@CurrentUser('id') userId: string): Promise<UserResponseDto> {
-        return this.getMeUseCase.execute(userId);
+    async getMe(@CurrentUser() user: CurrentUserData): Promise<UserResponseDto> {
+        return this.getMeUseCase.execute(user.id, user.dev === true);
+    }
+
+    @Get('organizers')
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Список организаторов (только для девелопера)' })
+    @ApiResponse({ status: 200, description: 'Список организаторов', type: [OrganizerListItemDto] })
+    @ApiResponse({ status: 403, description: 'Доступно только девелоперу' })
+    async listOrganizers(@CurrentUser() user: CurrentUserData): Promise<OrganizerListItemDto[]> {
+        const isDeveloper = user.role === 'DEVELOPER' || user.dev === true;
+        return this.listOrganizersUseCase.execute(isDeveloper);
+    }
+
+    @Post('act-as/:organizerId')
+    @HttpCode(HttpStatus.OK)
+    @ApiBearerAuth('JWT-auth')
+    @ApiOperation({ summary: 'Войти под организатора (только для девелопера)' })
+    @ApiResponse({ status: 200, description: 'Токены сессии под организатором', type: AuthResponseDto })
+    @ApiResponse({ status: 403, description: 'Доступно только девелоперу' })
+    @ApiResponse({ status: 404, description: 'Организатор не найден' })
+    async actAsOrganizer(
+        @CurrentUser() user: CurrentUserData,
+        @Param('organizerId') organizerId: string,
+    ): Promise<AuthResponseDto> {
+        return this.actAsOrganizerUseCase.execute(user, organizerId);
     }
 }

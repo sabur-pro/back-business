@@ -8,6 +8,7 @@ export class RefreshTokenEntity {
         public readonly userId: string,
         public readonly expiresAt: Date,
         public readonly createdAt: Date,
+        public readonly impersonatorId: string | null = null,
     ) { }
 
     isExpired(): boolean {
@@ -20,6 +21,7 @@ export class RefreshTokenEntity {
         userId: string;
         expiresAt: Date;
         createdAt?: Date;
+        impersonatorId?: string | null;
     }): RefreshTokenEntity {
         return new RefreshTokenEntity(
             props.id,
@@ -27,6 +29,7 @@ export class RefreshTokenEntity {
             props.userId,
             props.expiresAt,
             props.createdAt ?? new Date(),
+            props.impersonatorId ?? null,
         );
     }
 }

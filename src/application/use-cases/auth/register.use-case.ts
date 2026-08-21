@@ -82,6 +82,8 @@ export class RegisterUseCase {
             role: user.role,
             accountId: account.id,
             canAddProducts: user.canAddProducts,
+            canEditProducts: user.canEditProducts,
+            canDeleteProducts: user.canDeleteProducts,
             canManageCounterparties: user.canManageCounterparties,
         };
 

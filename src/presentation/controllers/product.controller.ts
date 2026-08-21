@@ -25,6 +25,8 @@ import {
     BatchCreateProductsResponseDto,
     ProductSearchQueryDto,
     PaginatedProductsResponseDto,
+    CheckExistingSkusDto,
+    CheckExistingSkusResponseDto,
 } from '@application/dto/product';
 import {
     CreateProductUseCase,
@@ -32,6 +34,9 @@ import {
     UpdateProductUseCase,
     DeleteProductUseCase,
     BatchCreateProductsUseCase,
+    CheckExistingSkusUseCase,
+    RestoreProductUseCase,
+    TrackProductUseCase,
 } from '@application/use-cases/product';
 
 @ApiTags('Товары')
@@ -44,6 +49,9 @@ export class ProductController {
         private readonly updateProductUseCase: UpdateProductUseCase,
         private readonly deleteProductUseCase: DeleteProductUseCase,
         private readonly batchCreateProductsUseCase: BatchCreateProductsUseCase,
+        private readonly checkExistingSkusUseCase: CheckExistingSkusUseCase,
+        private readonly restoreProductUseCase: RestoreProductUseCase,
+        private readonly trackProductUseCase: TrackProductUseCase,
     ) { }
 
     @Post()
@@ -68,6 +76,18 @@ export class ProductController {
         @Body() dto: BatchCreateProductsDto,
     ): Promise<BatchCreateProductsResponseDto> {
         return this.batchCreateProductsUseCase.execute(userId, dto);
+    }
+
+    @Post('check-existing')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Проверить, какие артикулы уже существуют на складе точки' })
+    @ApiResponse({ status: 200, description: 'Список существующих товаров', type: CheckExistingSkusResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    async checkExisting(
+        @CurrentUser('id') userId: string,
+        @Body() dto: CheckExistingSkusDto,
+    ): Promise<CheckExistingSkusResponseDto> {
+        return this.checkExistingSkusUseCase.execute(userId, dto);
     }
 
     @Get()
@@ -97,7 +117,19 @@ export class ProductController {
             page: query.page,
             limit: query.limit,
             search: query.search,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
+    }
+
+    @Get('track/:sku')
+    @ApiOperation({ summary: 'Отслеживание движения товара по артикулу' })
+    @ApiResponse({ status: 200, description: 'Полная история движения товара' })
+    async trackBySku(
+        @CurrentUser('id') userId: string,
+        @Param('sku') sku: string,
+    ) {
+        return this.trackProductUseCase.execute(userId, sku);
     }
 
     @Get('search/:accountId')
@@ -112,6 +144,8 @@ export class ProductController {
             page: query.page,
             limit: query.limit,
             search: query.search,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
     }
 
@@ -128,6 +162,8 @@ export class ProductController {
             limit: query.limit,
             search: query.search,
             zeroBoxes: query.zeroBoxes,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
     }
 
@@ -154,7 +190,21 @@ export class ProductController {
             limit: query.limit,
             search: query.search,
             zeroBoxes: query.zeroBoxes,
+            sortBy: query.sortBy as any,
+            order: query.order as any,
         });
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Получить товар по ID' })
+    @ApiResponse({ status: 200, description: 'Товар', type: ProductResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    @ApiResponse({ status: 404, description: 'Товар не найден' })
+    async getById(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ): Promise<ProductResponseDto> {
+        return this.getProductsUseCase.executeById(userId, id);
     }
 
     @Put(':id')
@@ -168,6 +218,18 @@ export class ProductController {
         @Body() dto: UpdateProductDto,
     ): Promise<ProductResponseDto> {
         return this.updateProductUseCase.execute(userId, id, dto);
+    }
+
+    @Put(':id/restore')
+    @ApiOperation({ summary: 'Восстановить удалённый товар' })
+    @ApiResponse({ status: 200, description: 'Товар восстановлен', type: ProductResponseDto })
+    @ApiResponse({ status: 403, description: 'Нет доступа' })
+    @ApiResponse({ status: 404, description: 'Удалённый товар не найден' })
+    async restore(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ): Promise<ProductResponseDto> {
+        return this.restoreProductUseCase.execute(userId, id);
     }
 
     @Delete('batch')

@@ -1,16 +1,49 @@
 import { ProductEntity } from '../entities/product.entity';
 
+export type ProductSortField =
+    | 'arrivedAt'
+    | 'sku'
+    | 'boxCount'
+    | 'pairCount'
+    | 'priceRub'
+    | 'recommendedSalePrice'
+    | 'totalRub';
+
 export interface ProductSearchParams {
     page?: number;
     limit?: number;
     search?: string;
     zeroBoxes?: boolean;
+    /** Поле сортировки, по умолчанию — по прибытию товара (arrivedAt) */
+    sortBy?: ProductSortField;
+    order?: 'asc' | 'desc';
+}
+
+export interface CategoryStats {
+    totalProducts: number;
+    totalYuan: number;
+    totalCostRub: number;
+    totalRecommendedSale: number;
+    differenceRubRecommended: number;
 }
 
 export interface ProductStats {
+    totalProducts: number;
     uniqueProducts: number;
     totalBoxes: number;
     totalPairs: number;
+    totalYuan: number;
+    totalCostRub: number;
+    totalRecommendedSale: number;
+    differenceRubRecommended: number;
+    inTransitProducts: number;
+    inTransitYuan: number;
+    inTransitRub: number;
+    byCategory: {
+        warehouseOnly: CategoryStats | null;
+        shopOnly: CategoryStats | null;
+        mixed: CategoryStats | null;
+    };
 }
 
 export interface PaginatedProducts {
@@ -19,6 +52,8 @@ export interface PaginatedProducts {
     page: number;
     limit: number;
     totalPages: number;
+    totalPairs: number;
+    totalBoxes: number;
 }
 
 export interface CreateProductData {
@@ -40,6 +75,7 @@ export interface CreateProductData {
     accountId: string;
     warehouseId?: string | null;
     isActive?: boolean;
+    lastArrivedAt?: Date;
 }
 
 export interface UpdateProductData {
@@ -59,6 +95,7 @@ export interface UpdateProductData {
     totalActualSale?: number;
     barcode?: string | null;
     isActive?: boolean;
+    lastArrivedAt?: Date;
 }
 
 /**
@@ -76,8 +113,11 @@ export interface IProductRepository {
     create(data: CreateProductData): Promise<ProductEntity>;
     createMany(data: CreateProductData[]): Promise<ProductEntity[]>;
     update(id: string, data: UpdateProductData): Promise<ProductEntity>;
+    updatePricesBySku(sku: string, accountId: string, data: { priceYuan?: number; priceRub?: number }): Promise<void>;
     delete(id: string): Promise<void>;
     deleteMany(ids: string[]): Promise<number>;
+    hardDelete(id: string): Promise<void>;
+    hardDeleteMany(ids: string[]): Promise<number>;
 }
 
 export const PRODUCT_REPOSITORY = Symbol('IProductRepository');

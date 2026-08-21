@@ -25,6 +25,7 @@ export class ProductEntity {
         public readonly isActive: boolean,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
+        public readonly lastArrivedAt: Date | null,
     ) { }
 
     static create(props: {
@@ -49,6 +50,7 @@ export class ProductEntity {
         isActive?: boolean;
         createdAt?: Date;
         updatedAt?: Date;
+        lastArrivedAt?: Date | null;
     }): ProductEntity {
         return new ProductEntity(
             props.id,
@@ -72,6 +74,7 @@ export class ProductEntity {
             props.isActive ?? true,
             props.createdAt ?? new Date(),
             props.updatedAt ?? new Date(),
+            props.lastArrivedAt ?? null,
         );
     }
 }

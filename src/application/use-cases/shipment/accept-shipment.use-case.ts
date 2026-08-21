@@ -21,9 +21,14 @@ import {
     IUserRepository,
     USER_REPOSITORY,
 } from '@domain/repositories/user.repository.interface';
+import {
+    IAuditLogRepository,
+    AUDIT_LOG_REPOSITORY,
+} from '@domain/repositories/audit-log.repository.interface';
 import { UserRole } from '@domain/entities/user.entity';
 import { WarehouseType } from '@domain/entities/warehouse.entity';
 import { ShipmentEntity, ShipmentStatus } from '@domain/entities/shipment.entity';
+import { AuditAction } from '@domain/entities/audit-log.entity';
 import { AcceptShipmentDto } from '@application/dto/shipment';
 import { PrismaService } from '@infrastructure/database/prisma/prisma.service';
 
@@ -38,6 +43,8 @@ export class AcceptShipmentUseCase {
         private readonly warehouseRepository: IWarehouseRepository,
         @Inject(USER_REPOSITORY)
         private readonly userRepository: IUserRepository,
+        @Inject(AUDIT_LOG_REPOSITORY)
+        private readonly auditLogRepository: IAuditLogRepository,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -83,8 +90,6 @@ export class AcceptShipmentUseCase {
         await this.checkReceiverAccess(userId, user.role, shipment.toPointId, shipment.toAccountId);
 
         // 5. Resolve receiver warehouses
-        // If the destination point has a SHOP, route all products directly to the shop.
-        // Otherwise, fall back to SKU-prefix-based routing ("Мужской" / "Женский").
         const shops = await this.warehouseRepository.findByPointIdAndType(shipment.toPointId, WarehouseType.SHOP);
         const shopWarehouse = shops.length > 0 ? shops[0] : null;
 
@@ -138,10 +143,43 @@ export class AcceptShipmentUseCase {
                             totalRub: Math.round(newTotalRub * 100) / 100,
                             totalRecommendedSale: Number(existingProduct.recommendedSalePrice) * newPairCount,
                             totalActualSale: Number(existingProduct.actualSalePrice) * newPairCount,
+                            lastArrivedAt: now,
+                        },
+                    });
+
+                    // Журнал поступлений: партия пришла в существующий товар
+                    await tx.productArrival.create({
+                        data: {
+                            accountId: shipment.toAccountId,
+                            warehouseId: targetWarehouseId,
+                            productId: existingProduct.id,
+                            sku: item.sku,
+                            photo: item.photo,
+                            sizeRange: item.sizeRange,
+                            boxCount: item.boxCount,
+                            pairCount: item.pairCount,
+                            priceYuan: item.priceYuan,
+                            priceRub: item.priceRub,
+                            recommendedSalePrice: existingProduct.recommendedSalePrice,
+                            sourceType: 'SHIPMENT',
+                            sourceId: shipmentId,
+                            arrivedAt: now,
                         },
                     });
                 } else {
-                    await tx.product.create({
+                    // Look up the source product to carry over recommendedSalePrice
+                    let sourceRecommendedPrice = 0;
+                    if (item.productId) {
+                        const sourceProduct = await tx.product.findUnique({
+                            where: { id: item.productId },
+                            select: { recommendedSalePrice: true },
+                        });
+                        if (sourceProduct) {
+                            sourceRecommendedPrice = Number(sourceProduct.recommendedSalePrice);
+                        }
+                    }
+
+                    const createdProduct = await tx.product.create({
                         data: {
                             sku: item.sku,
                             photo: item.photo,
@@ -152,12 +190,33 @@ export class AcceptShipmentUseCase {
                             priceRub: item.priceRub,
                             totalYuan: item.totalYuan,
                             totalRub: item.totalRub,
-                            recommendedSalePrice: 0,
-                            totalRecommendedSale: 0,
+                            recommendedSalePrice: sourceRecommendedPrice,
+                            totalRecommendedSale: sourceRecommendedPrice * item.pairCount,
                             actualSalePrice: 0,
                             totalActualSale: 0,
                             accountId: shipment.toAccountId,
                             warehouseId: targetWarehouseId,
+                            lastArrivedAt: now,
+                        },
+                    });
+
+                    // Журнал поступлений: новая позиция в магазине/складе
+                    await tx.productArrival.create({
+                        data: {
+                            accountId: shipment.toAccountId,
+                            warehouseId: targetWarehouseId,
+                            productId: createdProduct.id,
+                            sku: item.sku,
+                            photo: item.photo,
+                            sizeRange: item.sizeRange,
+                            boxCount: item.boxCount,
+                            pairCount: item.pairCount,
+                            priceYuan: item.priceYuan,
+                            priceRub: item.priceRub,
+                            recommendedSalePrice: sourceRecommendedPrice,
+                            sourceType: 'SHIPMENT',
+                            sourceId: shipmentId,
+                            arrivedAt: now,
                         },
                     });
                 }
@@ -173,6 +232,21 @@ export class AcceptShipmentUseCase {
                     confirmedAt: now,
                 },
             });
+        });
+
+        // Record audit log
+        await this.auditLogRepository.create({
+            action: AuditAction.SHIPMENT_ACCEPTED,
+            entityType: 'SHIPMENT',
+            entityId: shipmentId,
+            userId,
+            accountId: shipment.toAccountId,
+            newData: {
+                number: shipment.number,
+                itemCount: shipment.items.length,
+                totalYuan: shipment.totalYuan,
+                totalRub: shipment.totalRub,
+            },
         });
 
         // Return updated shipment

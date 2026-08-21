@@ -63,6 +63,8 @@ export class LoginUseCase {
             role: user.role,
             accountId: user.accountId || undefined,
             canAddProducts: user.canAddProducts,
+            canEditProducts: user.canEditProducts,
+            canDeleteProducts: user.canDeleteProducts,
             canManageCounterparties: user.canManageCounterparties,
         };
 

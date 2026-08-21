@@ -52,6 +52,8 @@ export class GetPointEmployeesUseCase {
                     canReceiveShipment: user.canReceiveShipment,
                     canSell: user.canSell,
                     canAddProducts: user.canAddProducts,
+                    canEditProducts: user.canEditProducts,
+                    canDeleteProducts: user.canDeleteProducts,
                     canManageCounterparties: user.canManageCounterparties,
                     isActive: user.isActive,
                     createdAt: user.createdAt,

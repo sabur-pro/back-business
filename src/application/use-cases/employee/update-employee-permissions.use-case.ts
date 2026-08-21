@@ -42,6 +42,8 @@ export class UpdateEmployeePermissionsUseCase {
             canReceiveShipment: dto.canReceiveShipment,
             canSell: dto.canSell,
             canAddProducts: dto.canAddProducts,
+            canEditProducts: dto.canEditProducts,
+            canDeleteProducts: dto.canDeleteProducts,
             canManageCounterparties: dto.canManageCounterparties,
         });
 
@@ -57,6 +59,8 @@ export class UpdateEmployeePermissionsUseCase {
             canReceiveShipment: updated.canReceiveShipment,
             canSell: updated.canSell,
             canAddProducts: updated.canAddProducts,
+            canEditProducts: updated.canEditProducts,
+            canDeleteProducts: updated.canDeleteProducts,
             canManageCounterparties: updated.canManageCounterparties,
             isActive: updated.isActive,
             createdAt: updated.createdAt,
