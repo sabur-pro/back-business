@@ -12,6 +12,8 @@ export interface CreateUserData {
     canReceiveShipment?: boolean;
     canSell?: boolean;
     canAddProducts?: boolean;
+    canEditProducts?: boolean;
+    canDeleteProducts?: boolean;
     canManageCounterparties?: boolean;
     isActive?: boolean;
 }
@@ -28,6 +30,8 @@ export interface UpdateUserData {
     canReceiveShipment?: boolean;
     canSell?: boolean;
     canAddProducts?: boolean;
+    canEditProducts?: boolean;
+    canDeleteProducts?: boolean;
     canManageCounterparties?: boolean;
     isActive?: boolean;
 }

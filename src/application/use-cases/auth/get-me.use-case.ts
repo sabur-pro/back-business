@@ -25,6 +25,8 @@ export class GetMeUseCase {
             role: user.role,
             accountId: user.accountId || undefined,
             canAddProducts: user.canAddProducts,
+            canEditProducts: user.canEditProducts,
+            canDeleteProducts: user.canDeleteProducts,
             canManageCounterparties: user.canManageCounterparties,
             // Признак сессии девелопера берётся из JWT (dev), а не из БД
             isDeveloper: isDeveloper || user.isDeveloper,

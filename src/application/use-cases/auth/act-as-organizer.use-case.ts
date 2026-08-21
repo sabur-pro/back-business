@@ -81,6 +81,8 @@ export class ActAsOrganizerUseCase {
             role: organizer.role,
             accountId: organizer.accountId || undefined,
             canAddProducts: organizer.canAddProducts,
+            canEditProducts: organizer.canEditProducts,
+            canDeleteProducts: organizer.canDeleteProducts,
             canManageCounterparties: organizer.canManageCounterparties,
             isDeveloper: true,
         };

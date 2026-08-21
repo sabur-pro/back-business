@@ -28,6 +28,12 @@ export class UserResponseDto {
     @ApiPropertyOptional({ description: 'Может добавлять товары' })
     canAddProducts?: boolean;
 
+    @ApiPropertyOptional({ description: 'Может редактировать товары' })
+    canEditProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может удалять товары' })
+    canDeleteProducts?: boolean;
+
     @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
     canManageCounterparties?: boolean;
 

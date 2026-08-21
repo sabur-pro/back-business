@@ -71,6 +71,12 @@ export class EmployeeResponseDto {
     @ApiProperty({ description: 'Может добавлять товары' })
     canAddProducts: boolean;
 
+    @ApiProperty({ description: 'Может редактировать товары' })
+    canEditProducts: boolean;
+
+    @ApiProperty({ description: 'Может удалять товары' })
+    canDeleteProducts: boolean;
+
     @ApiProperty({ description: 'Может управлять контрагентами' })
     canManageCounterparties: boolean;
 
@@ -101,6 +107,16 @@ export class UpdateEmployeePermissionsDto {
     @IsBoolean({ message: 'canAddProducts должен быть boolean' })
     @IsOptional()
     canAddProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может редактировать товары' })
+    @IsBoolean({ message: 'canEditProducts должен быть boolean' })
+    @IsOptional()
+    canEditProducts?: boolean;
+
+    @ApiPropertyOptional({ description: 'Может удалять товары' })
+    @IsBoolean({ message: 'canDeleteProducts должен быть boolean' })
+    @IsOptional()
+    canDeleteProducts?: boolean;
 
     @ApiPropertyOptional({ description: 'Может управлять контрагентами' })
     @IsBoolean({ message: 'canManageCounterparties должен быть boolean' })

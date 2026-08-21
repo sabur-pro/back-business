@@ -29,6 +29,8 @@ model User {
   canReceiveShipment      Boolean  @default(false)
   canSell                 Boolean  @default(false)
   canAddProducts          Boolean  @default(false)
+  canEditProducts         Boolean  @default(false)
+  canDeleteProducts       Boolean  @default(false)
   canManageCounterparties Boolean  @default(false)
   isActive                Boolean  @default(true)
   createdAt               DateTime @default(now())

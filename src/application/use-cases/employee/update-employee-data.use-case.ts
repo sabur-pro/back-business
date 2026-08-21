@@ -79,6 +79,8 @@ export class UpdateEmployeeDataUseCase {
             canReceiveShipment: updated.canReceiveShipment,
             canSell: updated.canSell,
             canAddProducts: updated.canAddProducts,
+            canEditProducts: updated.canEditProducts,
+            canDeleteProducts: updated.canDeleteProducts,
             canManageCounterparties: updated.canManageCounterparties,
             isActive: updated.isActive,
             createdAt: updated.createdAt,

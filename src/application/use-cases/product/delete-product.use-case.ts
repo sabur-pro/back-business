@@ -174,8 +174,8 @@ export class DeleteProductUseCase {
             }
 
             const user = await this.userRepository.findById(userId);
-            if (!user || !user.canAddProducts) {
-                throw new ForbiddenException('Организатор не предоставил право управления товарами');
+            if (!user || !user.canDeleteProducts) {
+                throw new ForbiddenException('Организатор не предоставил право удаления товаров');
             }
             return;
         }
