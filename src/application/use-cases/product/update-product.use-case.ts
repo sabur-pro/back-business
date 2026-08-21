@@ -68,6 +68,7 @@ export class UpdateProductUseCase {
         const fieldsToTrack = [
             'sku', 'photoOriginal', 'photo', 'sizeRange', 'boxCount', 'pairCount',
             'priceYuan', 'priceRub', 'totalYuan', 'totalRub', 'barcode', 'isActive',
+            'recommendedSalePrice', 'totalRecommendedSale', 'actualSalePrice', 'totalActualSale',
         ] as const;
 
         for (const field of fieldsToTrack) {
@@ -76,6 +77,17 @@ export class UpdateProductUseCase {
                 newData[field] = (dto as any)[field];
             }
         }
+
+        // Итоговые суммы продажи считаем от количества пар, если клиент прислал только цену
+        const pairCount = dto.pairCount ?? product.pairCount;
+        const totalRecommendedSale = dto.totalRecommendedSale
+            ?? (dto.recommendedSalePrice !== undefined
+                ? Math.round(dto.recommendedSalePrice * pairCount * 100) / 100
+                : undefined);
+        const totalActualSale = dto.totalActualSale
+            ?? (dto.actualSalePrice !== undefined
+                ? Math.round(dto.actualSalePrice * pairCount * 100) / 100
+                : undefined);
 
         const updatedProduct = await this.productRepository.update(productId, {
             sku: dto.sku,
@@ -88,6 +100,10 @@ export class UpdateProductUseCase {
             priceRub: dto.priceRub,
             totalYuan: dto.totalYuan,
             totalRub: dto.totalRub,
+            recommendedSalePrice: dto.recommendedSalePrice,
+            totalRecommendedSale,
+            actualSalePrice: dto.actualSalePrice,
+            totalActualSale,
             barcode: dto.barcode,
             isActive: dto.isActive,
         });
