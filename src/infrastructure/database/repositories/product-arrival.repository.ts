@@ -111,7 +111,7 @@ export class ProductArrivalRepository implements IProductArrivalRepository {
             }>
         >`
             SELECT
-                to_char("arrivedAt" + make_interval(mins => ${tzOffsetMinutes}), 'YYYY-MM-DD') AS "date",
+                to_char("arrivedAt" + make_interval(mins => ${tzOffsetMinutes}::int), 'YYYY-MM-DD') AS "date",
                 COUNT(*)::int AS "arrivalsCount",
                 COALESCE(SUM("boxCount"), 0)::int AS "boxCount",
                 COALESCE(SUM("pairCount"), 0)::int AS "pairCount",
