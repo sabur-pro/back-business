@@ -146,84 +146,158 @@ async function backfillFromReceipts() {
     console.log(`  Приход: создано партий ${created}, пропущено записей (уже есть) ${skipped}`);
 }
 
-/** Раскидать проданное по партиям (FIFO) и выровнять остаток с фактическим */
-async function distributeSoldAndAlign() {
-    const products = await prisma.product.findMany({
-        where: { deletedAt: null },
-        select: { id: true, boxCount: true, pairCount: true },
-    });
+/**
+ * Привязать партии к товарам и выровнять остаток с фактическим.
+ *
+ * Считаем по группам «склад + артикул», а не по товарам: партия могла остаться
+ * без productId (товар удалён или не нашёлся при импорте), и такой остаток
+ * иначе висит в журнале вечно.
+ *
+ * В группе: проданное раскидывается по партиям FIFO, документальные возвраты
+ * учитываются как есть, а всё, что осталось сверх фактического остатка товара
+ * (отправки в другие точки, ручные правки, списания), гасится в returned
+ * у самых старых партий. Итог: сумма остатков партий == остаток товара.
+ */
+async function linkAndAlign() {
+    const groups = await prisma.$queryRaw`
+        SELECT "warehouseId", "sku"
+        FROM "ProductArrival"
+        GROUP BY "warehouseId", "sku"
+    `;
 
-    let touched = 0;
+    let linked = 0;
+    let aligned = 0;
 
-    for (const product of products) {
+    for (const group of groups) {
         const arrivals = await prisma.productArrival.findMany({
-            where: { productId: product.id },
+            where: { warehouseId: group.warehouseId, sku: group.sku },
             orderBy: { arrivedAt: 'asc' },
         });
         if (arrivals.length === 0) continue;
 
-        const soldAgg = await prisma.saleItem.aggregate({
-            where: { productId: product.id, sale: { status: 'COMPLETED' } },
+        const product = await prisma.product.findFirst({
+            where: { warehouseId: group.warehouseId, sku: group.sku, deletedAt: null },
+            select: { id: true, boxCount: true, pairCount: true },
+        });
+
+        // Партии без товара привязываем к найденному товару этого склада
+        if (product) {
+            const orphanIds = arrivals.filter((a) => a.productId !== product.id).map((a) => a.id);
+            if (orphanIds.length > 0) {
+                await prisma.productArrival.updateMany({
+                    where: { id: { in: orphanIds } },
+                    data: { productId: product.id },
+                });
+                linked += orphanIds.length;
+            }
+        }
+
+        const stockBoxes = product ? product.boxCount : 0;
+        const stockPairs = product ? product.pairCount : 0;
+
+        const soldAgg = product
+            ? await prisma.saleItem.aggregate({
+                where: { productId: product.id, sale: { status: 'COMPLETED' } },
+                _sum: { boxCount: true, pairCount: true },
+            })
+            : { _sum: { boxCount: 0, pairCount: 0 } };
+
+        // Документально оформленные возвраты — их нельзя переписывать
+        const returnAgg = await prisma.productReturnItem.groupBy({
+            by: ['arrivalId'],
+            where: { arrivalId: { in: arrivals.map((a) => a.id) } },
             _sum: { boxCount: true, pairCount: true },
         });
+        const returnedByArrival = new Map(
+            returnAgg.map((r) => [r.arrivalId, { boxes: num(r._sum.boxCount), pairs: num(r._sum.pairCount) }]),
+        );
 
         let soldBoxesLeft = num(soldAgg._sum.boxCount);
         let soldPairsLeft = num(soldAgg._sum.pairCount);
 
         const plan = arrivals.map((a) => {
-            const boxes = Math.min(a.boxCount, soldBoxesLeft);
-            const pairs = Math.min(a.pairCount, soldPairsLeft);
-            soldBoxesLeft -= boxes;
-            soldPairsLeft -= pairs;
-            return { id: a.id, soldBoxes: boxes, soldPairs: pairs, boxCount: a.boxCount, pairCount: a.pairCount, returnedBoxes: 0, returnedPairs: 0 };
+            const returned = returnedByArrival.get(a.id) ?? { boxes: 0, pairs: 0 };
+            // Партия «неизвестного происхождения» — снимок остатка, проданное в неё не пишем
+            const capBoxes = a.sourceType === 'MANUAL' ? 0 : Math.max(0, a.boxCount - returned.boxes);
+            const capPairs = a.sourceType === 'MANUAL' ? 0 : Math.max(0, a.pairCount - returned.pairs);
+
+            const soldBoxes = Math.min(capBoxes, soldBoxesLeft);
+            const soldPairs = Math.min(capPairs, soldPairsLeft);
+            soldBoxesLeft -= soldBoxes;
+            soldPairsLeft -= soldPairs;
+
+            return {
+                id: a.id,
+                boxCount: a.boxCount,
+                pairCount: a.pairCount,
+                soldBoxes,
+                soldPairs,
+                returnedBoxes: returned.boxes,
+                returnedPairs: returned.pairs,
+                prev: a,
+            };
         });
 
-        // Остаток партий не должен превышать фактический остаток товара:
-        // разницу (ручные правки, списания) гасим в самых старых партиях
-        let boxExcess = plan.reduce((s, p) => s + (p.boxCount - p.soldBoxes), 0) - product.boxCount;
-        let pairExcess = plan.reduce((s, p) => s + (p.pairCount - p.soldPairs), 0) - product.pairCount;
+        let boxExcess = plan.reduce((s, p) => s + (p.boxCount - p.soldBoxes - p.returnedBoxes), 0) - stockBoxes;
+        let pairExcess = plan.reduce((s, p) => s + (p.pairCount - p.soldPairs - p.returnedPairs), 0) - stockPairs;
 
         for (const p of plan) {
             if (boxExcess > 0) {
-                const take = Math.min(boxExcess, p.boxCount - p.soldBoxes);
-                p.returnedBoxes = take;
+                const take = Math.min(boxExcess, p.boxCount - p.soldBoxes - p.returnedBoxes);
+                p.returnedBoxes += take;
                 boxExcess -= take;
             }
             if (pairExcess > 0) {
-                const take = Math.min(pairExcess, p.pairCount - p.soldPairs);
-                p.returnedPairs = take;
+                const take = Math.min(pairExcess, p.pairCount - p.soldPairs - p.returnedPairs);
+                p.returnedPairs += take;
                 pairExcess -= take;
             }
         }
 
-        await prisma.$transaction(
-            plan.map((p) =>
-                prisma.productArrival.update({
-                    where: { id: p.id },
-                    data: {
-                        soldBoxes: p.soldBoxes,
-                        soldPairs: p.soldPairs,
-                        returnedBoxes: p.returnedBoxes,
-                        returnedPairs: p.returnedPairs,
-                    },
-                }),
-            ),
+        const changed = plan.filter(
+            (p) =>
+                p.prev.soldBoxes !== p.soldBoxes ||
+                p.prev.soldPairs !== p.soldPairs ||
+                p.prev.returnedBoxes !== p.returnedBoxes ||
+                p.prev.returnedPairs !== p.returnedPairs,
         );
-        touched += plan.length;
+
+        if (changed.length > 0) {
+            await prisma.$transaction(
+                changed.map((p) =>
+                    prisma.productArrival.update({
+                        where: { id: p.id },
+                        data: {
+                            soldBoxes: p.soldBoxes,
+                            soldPairs: p.soldPairs,
+                            returnedBoxes: p.returnedBoxes,
+                            returnedPairs: p.returnedPairs,
+                        },
+                    }),
+                ),
+            );
+            aligned += changed.length;
+        }
     }
 
-    console.log(`  Распределено проданное по партиям: ${touched}`);
+    console.log(`  Привязано партий к товарам: ${linked}`);
+    console.log(`  Выровнено партий по остатку: ${aligned}`);
 }
 
 /** Товары с остатком, но без единой партии — создаём партию «неизвестного происхождения» */
 async function backfillOrphanStock() {
     const products = await prisma.product.findMany({
         where: { deletedAt: null, warehouseId: { not: null } },
-        include: { arrivals: { select: { id: true }, take: 1 } },
     });
 
+    // Проверяем по паре «склад + артикул»: партия могла быть не привязана к товару
+    const existing = await prisma.$queryRaw`
+        SELECT "warehouseId", "sku" FROM "ProductArrival" GROUP BY "warehouseId", "sku"
+    `;
+    const known = new Set(existing.map((e) => `${e.warehouseId}|${e.sku}`));
+
     const orphans = products.filter(
-        (p) => p.arrivals.length === 0 && (p.pairCount > 0 || p.boxCount > 0),
+        (p) => !known.has(`${p.warehouseId}|${p.sku}`) && (p.pairCount > 0 || p.boxCount > 0),
     );
 
     if (orphans.length === 0) {
@@ -270,13 +344,35 @@ async function syncLastArrivedAt() {
     console.log(`  Дата последнего поступления проставлена товарам: ${updated}`);
 }
 
+/** Сверка: остаток по партиям должен совпадать с фактическим остатком склада */
+async function verify() {
+    const rows = await prisma.$queryRaw`
+        SELECT w."name",
+               COALESCE(SUM(a."pairCount" - a."soldPairs" - a."returnedPairs"), 0)::int AS "arrivalRemainder",
+               COALESCE((SELECT SUM(p."pairCount") FROM "Product" p
+                         WHERE p."warehouseId" = w."id" AND p."deletedAt" IS NULL), 0)::int AS "productStock"
+        FROM "ProductArrival" a
+        JOIN "Warehouse" w ON w."id" = a."warehouseId"
+        GROUP BY w."id", w."name"
+        ORDER BY w."name"
+    `;
+
+    console.log('  Сверка остатков (пары):');
+    for (const row of rows) {
+        const diff = row.arrivalRemainder - row.productStock;
+        const mark = diff === 0 ? 'ok' : `расхождение ${diff > 0 ? '+' : ''}${diff}`;
+        console.log(`    ${row.name}: партии ${row.arrivalRemainder} / склад ${row.productStock} — ${mark}`);
+    }
+}
+
 async function main() {
     console.log('Бэкфилл журнала поступлений...');
     await backfillFromShipments();
     await backfillFromReceipts();
-    await distributeSoldAndAlign();
+    await linkAndAlign();
     await backfillOrphanStock();
     await syncLastArrivedAt();
+    await verify();
 
     const total = await prisma.productArrival.count();
     console.log(`Готово. Всего партий в журнале: ${total}`);
